@@ -1,0 +1,12 @@
+# Ignore work directories
+work/
+
+# Ignore Nextflow specific files
+.nextflow/
+
+# Ignore Nextflow configuration and run files
+.nextflow.log
+*.nextflow.*
+# Explicitly include report and trace files
+!report-*.html
+!trace-*.txt

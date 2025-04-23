@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
+// NXF_OFFLINE=true  nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
 
 /*
  * This pipeline processes BAF+LRR probe files from a cohort of individuals
@@ -89,12 +90,13 @@ process generate_pfb {
     echo "Process Running: generate_pfb"
 
     # Run Perl script to compile the PFB file from selected samples
-    compile_pfb.pl \
-        -listfile "$list_best_BAF_LRR_Probes" \
-        -out 'pfb.tsv'
+    compile_pfb.py "$list_best_BAF_LRR_Probes" 'pfb.tsv' 64
     """
 }
 
+// compile_pfb.pl \
+//     -listfile "$list_best_BAF_LRR_Probes" \
+//     -out 'pfb.tsv'
 
 
 // Step 4: Create a GC model file by mapping GC content to SNPs using genomic windows
@@ -116,7 +118,7 @@ process generate_gcmodel {
     tail -n +2 "$pfb_file" | awk '{print \$2"\t"\$3"\t"\$3"\t"\$1}' > SNP.bed
 
     # Create the header for the GC model output file
-    echo -e "Name\tChr\tPosition\tGC_percent" > 'gcModel.txt'
+    echo -e "Name\tChr\tPosition\tGC_percent" > 'gcModel.tsv'
 
     # Intersect SNPs with genomic windows and compute GC content for each SNP position
     bedtools intersect -a SNP.bed -b "$gc_content_windows" -loj | awk -F"\t" '{print \$4"\t"\$1"\t"\$2"\t"(\$8*100)}' >> 'gcModel.tsv'
@@ -129,8 +131,8 @@ process generate_gcmodel {
 workflow {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
-    plink_metadata                     = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/modules/data_from_plink/work/a5/4bafc8991b5d661c1a03dbd4b75e32/plink_metadata.tsv")
-    gc_content_windows                 = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/modules/penncnv_params/resources/gc_content_windows_GRCh37.tsv")
+    plink_metadata = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/27/ad6229a5f670de52fd1f7b8fabf8ac/plink_metadata.tsv")
+    gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_windows_GRCh37.bed")
 
     // Step 1
     generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)

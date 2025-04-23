@@ -50,7 +50,8 @@ input_file_penncnv="$2"
 probe_coordinate="$3"
 output="$4"
 
-
+# Get the directory of the currently running script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ### --------------------- INTERMEDIATE TEMPORARY FILES --------------------- ###
 
@@ -83,16 +84,16 @@ trap cleanup EXIT
 ### --------------------- STEP 1: Format QuantiSNP and PennCNV outputs --------------------- ###
 
 # Format raw QuantiSNP and PennCNV outputs into standardized tabular files
-format_quantisnp_cnv.sh "$input_file_quantisnp" "$tmp_qs"
-format_penncnv_cnv.sh "$input_file_penncnv" "$tmp_pc"
+"$SCRIPT_DIR"/format_quantisnp_cnv.sh "$input_file_quantisnp" "$tmp_qs"
+"$SCRIPT_DIR"/format_penncnv_cnv.sh "$input_file_penncnv" "$tmp_pc"
 
 
 
 ### --------------------- STEP 2: Remove PAR regions --------------------- ###
 
 # Remove CNVs in pseudoautosomal regions on ChrX with Copy_Number = 2 for each algorithm
-remove_PAR_regions.sh "$tmp_qs" "$qs_clean" GRCh37
-remove_PAR_regions.sh "$tmp_pc" "$pc_clean" GRCh37
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" GRCh37
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_pc" "$pc_clean" GRCh37
 
 
 
@@ -121,7 +122,7 @@ awk '$4 != "NaN" {print "chr"$2"\t"$3"\t"$3}' "$probe_coordinate" | tail -n +2 |
 
 
 # Count number of probes overlapping each CNV
-count_probes_per_cnv.sh "$merged_tsv" "$probes_correct" "$probes_bed"
+"$SCRIPT_DIR"/count_probes_per_cnv.sh "$merged_tsv" "$probes_correct" "$probes_bed"
 
 
 
@@ -131,7 +132,7 @@ count_probes_per_cnv.sh "$merged_tsv" "$probes_correct" "$probes_bed"
 algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean"
 
 # Compute overlap with original CNV files
-compute_cnv_overlap_fraction.sh "$probes_correct" "$algo_to_overlap" "$overlap_raw"
+"$SCRIPT_DIR"/compute_cnv_overlap_fraction.sh "$probes_correct" "$algo_to_overlap" "$overlap_raw"
 
 
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+ 
 # Importing necessary libraries
 import pandas as pd  # For reading and manipulating data
 import numpy as np  # For numerical operations (though not used here directly)
@@ -32,7 +34,7 @@ import multiprocessing as mp  # For parallel processing
 # - num_cpu: Number of CPU cores to use for parallel processing.
 #
 # Example:
-# python script.py snp_file_list.txt output_results.tsv 4
+# python compile_pfb.py snp_file_list.txt output_results.tsv 4
 # ------------------------------------------------------------------------------
 
 

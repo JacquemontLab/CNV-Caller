@@ -38,7 +38,7 @@ fi
 input_file="$1"
 output_file="$2"
 genome_version="${3:-GRCh38}"   # Default to GRCh38 if not provided
-PAR_regions="${4:-/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/ressources/PAR_regions.tsv}" # Default PAR regions path
+PAR_regions="${4:-/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/PAR_regions.tsv}" # Default PAR regions path
 
 # Determine whether the input file is gzipped
 if [[ "$input_file" == *.gz ]]; then
