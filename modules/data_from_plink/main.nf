@@ -1,6 +1,27 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
+// NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
+
+// Nextflow process to compute call rate and infer sex from PLINK files
+process collect_plink_metadata {
+    tag "collect_plink_metadata"  // Optional identifier for tracking/logging
+
+    input:
+    tuple val(plink_prefix), path(plink_files)                 // Path to the PLINK binary dataset (prefix of .bed/.bim/.fam files)
+    path one_baf_lrr_probes_file // A TSV file with probe IDs in the first column (used for filtering SNPs)
+
+    output:
+    path "plink_metadata.tsv"  // Final output file with sample ID, call rate, and imputed sex
+
+    script:
+    """
+    echo "Process Running: collect_plink_metadata"
+
+    plink_get_sex_callrate.sh "$plink_prefix" "$one_baf_lrr_probes_file" "plink_metadata.tsv"
+    """
+}
+
 
 workflow {
     // Define the base output path for PLINK dataset
@@ -28,24 +49,3 @@ workflow {
     // Run the metadata collection process
     collect_plink_metadata(plink_set, probes_file)
 }
-
-
-// Nextflow process to compute call rate and infer sex from PLINK files
-process collect_plink_metadata {
-    tag "collect_plink_metadata"  // Optional identifier for tracking/logging
-
-    input:
-    tuple val(plink_prefix), path(plink_files)                 // Path to the PLINK binary dataset (prefix of .bed/.bim/.fam files)
-    path one_baf_lrr_probes_file // A TSV file with probe IDs in the first column (used for filtering SNPs)
-
-    output:
-    path "plink_metadata.tsv"  // Final output file with sample ID, call rate, and imputed sex
-
-    script:
-    """
-    echo "Process Running: collect_plink_metadata"
-
-    plink_get_sex_callrate.sh "$plink_prefix" "$one_baf_lrr_probes_file" "plink_metadata.tsv"
-    """
-}
-

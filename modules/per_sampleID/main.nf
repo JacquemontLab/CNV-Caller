@@ -8,7 +8,7 @@ process CNV_calling {
     tag "CNV_calling: ${sample_id}"
 
     input:
-    tuple val(sample_id), path(BAF_LRR_Probes), path(pfb_file), path(gcmodel_file), path(plink_metadata)
+    tuple val(sample_id), path(BAF_LRR_Probes), path(pfb_file), path(gcmodel_file), path(plink_metadata), path(gcdir)
 
 
     output:
@@ -18,7 +18,6 @@ process CNV_calling {
     script:
     """
     # Default parameters can be set here
-    gcdir="/usr/local/quantisnp/gc/b38/"
     minlength=1000
     minconf=15.0
     chr="1:23"
@@ -77,7 +76,7 @@ process CNV_calling {
         --gender \${gender} \
         --config \${config} \
         --levels \${levels} \
-        --gcdir \${gcdir} \
+        --gcdir ${gcdir} \
         --input-files ${BAF_LRR_Probes} \
         --doXcorrect --verbose &> ${sample_id}.quantisnp.log
 
@@ -105,17 +104,16 @@ process merge_cnv_quantisnp_penncnv {
 
     merge_cnv_quantisnp_penncnv.sh "$quantisnp_file" "$penncnv_file" "$BAF_LRR_Probes" ${sample_id}.CNVs.tsv
 
-    # You can add quality output generation here if needed
     extract_qc_penncnv.sh "$penncnv_logfile" ${sample_id}.PennCNV_QC.tsv
     """
 }
 
 
-params.list_path_to_BAF_LRR_Probes = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/list.tsv"
-params.BAF_LRR_Probes = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/ALSPAC09894851.BAF_LRR_Probes.tsv"
-params.pfb_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/6d/c2e1e23412cba19b2d90889ac413c4/pfb.tsv"
-params.gcmodel_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/fb/1ed66c90f60a69ed6da1c17182c3b8/gcModel.tsv"
-params.plink_metadata = "/lustre06/project/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/27/ad6229a5f670de52fd1f7b8fabf8ac/plink_metadata.tsv"
+params.list_path_to_BAF_LRR_Probes = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/f4/7c4e30*/list_path_to_BAF_LRR_Probes.tsv"
+params.pfb_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/c2/cf2607*/pfb.tsv"
+params.gcmodel_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/a5/6ea189cd1a9453de83807dc408fdf0/gcModel.tsv"
+params.gcDir = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/GRCh37_GCdir/"
+params.plink_metadata = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/76/e35544f2e885e3217ccf31b84e5ef2/plink_metadata.tsv"
 
 
 workflow {
@@ -141,10 +139,11 @@ workflow {
     pfb_file_ch = file(params.pfb_file)
     gcmodel_file_ch = file(params.gcmodel_file)
     plink_metadata_ch = file(params.plink_metadata)
+    gcDir_ch = file(params.gcDir)
 
     cnv_inputs = sample_inputs
         .map { sample -> 
-            tuple(sample[0], sample[1], pfb_file_ch, gcmodel_file_ch, plink_metadata_ch)
+            tuple(sample[0], sample[1], pfb_file_ch, gcmodel_file_ch, plink_metadata_ch,gcDir_ch)
         }
 
     cnv_inputs | CNV_calling | merge_cnv_quantisnp_penncnv

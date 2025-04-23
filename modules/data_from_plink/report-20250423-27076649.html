@@ -18,11 +18,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Nextflow workflow report for run id [happy_dalembert]">
+  <meta name="description" content="Nextflow workflow report for run id [disturbed_brahmagupta]">
   <meta name="author" content="Paolo Di Tommaso, Phil Ewels">
   <link rel="icon" type="image/png" href="https://www.nextflow.io/img/favicon.png" />
 
-  <title>[happy_dalembert] Nextflow Workflow Report</title>
+  <title>[disturbed_brahmagupta] Nextflow Workflow Report</title>
 
   <style type="text/css">
   /*!
@@ -137,7 +137,7 @@ table.DTCR_clonedTable.dataTable{position:absolute !important;background-color:r
         <li class="nav-item"><a class="nav-link" href="#tasks">Tasks</a></li>
       </ul>
       <span class="navbar-text">
-        [happy_dalembert]
+        [disturbed_brahmagupta]
       </span>
     </div>
   </nav>
@@ -146,98 +146,32 @@ table.DTCR_clonedTable.dataTable{position:absolute !important;background-color:r
     <div class="container">
 
       <h1 class="display-3">Nextflow workflow report</h1>
-      <h2 class="text-muted mb-4"><samp>[happy_dalembert]</samp> </h2>
+      <h2 class="text-muted mb-4"><samp>[disturbed_brahmagupta]</samp> </h2>
 
       
-          <div class="alert alert-danger mb-4">
-              <h4>Workflow execution completed unsuccessfully!</h4>
-              <p>The exit status of the task that caused the workflow execution to fail was: <code>1</code>.</p>
-              <p>The full error message was:</p>
-              <pre>Error executing process > 'CNV_calling (CNV_calling: ALSPAC09894851)'
-
-Caused by:
-  Process `CNV_calling (CNV_calling: ALSPAC09894851)` terminated with an error exit status (1)
-
-
-Command executed:
-
-  # Default parameters can be set here
-  gcdir="/usr/local/quantisnp/gc/b38/"
-  minlength=1000
-  minconf=15.0
-  chr="1:23"
-  hmm_file="/usr/local/bin/hhall.hmm"
-  levels="/usr/local/quantisnp/bin/config/levels.dat"
-  config="/usr/local/quantisnp/bin/config/params.dat"
-  
-  echo "Process Running: CNV_calling for ALSPAC09894851"
-  
-  set -euo pipefail
-  
-  echo "Extracting gender from sex file..."
-  zgrep -P "ALSPAC09894851	" plink_metadata.tsv | cut -f1,2 > sexfile.tsv
-  gender=$(cut -f2 sexfile.tsv)
-  
-  
-  echo "Gender: $gender"
-  if [[ "$gender" != "male" && "$gender" != "female" ]]; then
-      echo "ERROR: Invalid gender '$gender' for sample ID ALSPAC09894851. Expected 'male' or 'female'."
-      exit 1
-  fi
-  
-  
-  echo "Running PennCNV on autosomes..."
-  /usr/bin/time -v perl /usr/local/bin/detect_cnv.pl --test         --pfbfile pfb.tsv         --hmmfile ${hmm_file}         --logfile ALSPAC09894851.penncnv.log         --minlength ${minlength}         --minconf ${minconf}         --output ALSPAC09894851.penncnv.out         --gcmodelfile gcModel.tsv         ALSPAC09894851.BAF_LRR_Probes.tsv
-  
-  echo "Running PennCNV on ChrX..."
-  /usr/bin/time -v perl /usr/local/bin/detect_cnv.pl --test         --pfbfile pfb.tsv         --hmmfile ${hmm_file}         --logfile ALSPAC09894851.penncnv.chrx.log         --minlength ${minlength}         --minconf ${minconf}         --output ALSPAC09894851.penncnv.chrx.out         --gcmodelfile gcModel.tsv         --sexfile sexfile.tsv         --chrx         ALSPAC09894851.BAF_LRR_Probes.tsv
-  
-  
-  echo "Running QuantiSNP..."
-  export MCR_CACHE_ROOT="tmp/mcr_cache"
-  mkdir -p "$MCR_CACHE_ROOT"
-  
-  /usr/bin/time -v quantisnp --chr ${chr}         --outdir .         --sampleid ALSPAC09894851         --gender ${gender}         --config ${config}         --levels ${levels}         --gcdir ${gcdir}         --input-files ALSPAC09894851.BAF_LRR_Probes.tsv         --doXcorrect --verbose &> ALSPAC09894851.quantisnp.log
-  
-  mv ALSPAC09894851.cnv ALSPAC09894851.quantisnp.cnv
-  
-  echo "Merging CNV results..."
-  cat ALSPAC09894851.penncnv.chrx.out ALSPAC09894851.penncnv.out > ALSPAC09894851.penncnv.cnv
-
-Command exit status:
-  1
-
-Command output:
-  (empty)
-
-Command error:
-  Command 'ps' required by nextflow to collect task metrics cannot be found
-
-Work dir:
-  /lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/work/d1/1e6f5d8656c372012af3ad87074b07
-
-Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`</pre>
+          <div class="alert alert-success mb-4">
+              Workflow execution completed successfully!
           </div>
       
 
       <dl>
         <dt>Run times</dt>
         <dd>
-          <span id="workflow_start">22-Apr-2025 18:11:43</span> - <span id="workflow_complete">22-Apr-2025 18:11:47</span>
-          (<span id="completed_fromnow"></span>duration: <strong>3.3s</strong>)
+          <span id="workflow_start">23-Apr-2025 07:31:17</span> - <span id="workflow_complete">23-Apr-2025 07:31:28</span>
+          (<span id="completed_fromnow"></span>duration: <strong>11.2s</strong>)
         </dd>
 
         <dl>
           <div class="progress" style="height: 1.6rem; margin: 1.2rem auto; border-radius: 0.20rem;">
-            <div style="width: 0.0%" class="progress-bar bg-success" data-toggle="tooltip" data-placement="top" title="0 tasks succeeded"><span class="text-truncate">&nbsp; 0 succeeded &nbsp;</span></div>
+            <div style="width: 100.0%" class="progress-bar bg-success" data-toggle="tooltip" data-placement="top" title="1 tasks succeeded"><span class="text-truncate">&nbsp; 1 succeeded &nbsp;</span></div>
             <div style="width: 0.0%" class="progress-bar bg-secondary" data-toggle="tooltip" data-placement="top" title="0 tasks were cached"><span class="text-truncate">&nbsp; 0 cached &nbsp;</span></div>
             <div style="width: 0.0%" class="progress-bar bg-warning" data-toggle="tooltip" data-placement="top" title="0 tasks reported and error and were ignored"><span class="text-truncate">&nbsp; 0 ignored &nbsp;</span></div>
-            <div style="width: 100.0%" class="progress-bar bg-danger" data-toggle="tooltip" data-placement="top" title="1 tasks failed"><span class="text-truncate">&nbsp; 1 failed &nbsp;</span></div>
+            <div style="width: 0.0%" class="progress-bar bg-danger" data-toggle="tooltip" data-placement="top" title="0 tasks failed"><span class="text-truncate">&nbsp; 0 failed &nbsp;</span></div>
           </div>
         </dl>
 
         <dt>Nextflow command</dt>
-        <dd><pre class="nfcommand"><code>nextflow run main.nf -c nextflow.config -with-trace -with-report</code></pre></dd>
+        <dd><pre class="nfcommand"><code>nextflow run main.nf -resume -c nextflow.config -with-trace -with-report</code></pre></dd>
       </dl>
 
       <dl class="row small">
@@ -245,13 +179,13 @@ Tip: you can replicate the issue by changing to the process work dir and enterin
         <dd class="col-sm-9"><samp>(a few seconds)</samp></dd>
 
         <dt class="col-sm-3">Launch directory</dt>
-        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID</samp></dd>
+        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink</samp></dd>
 
         <dt class="col-sm-3">Work directory</dt>
-        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/work</samp></dd>
+        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work</samp></dd>
 
         <dt class="col-sm-3">Project directory</dt>
-        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID</samp></dd>
+        <dd class="col-sm-9"><samp>/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink</samp></dd>
 
         
           <dt class="col-sm-3">Script name</dt>
@@ -260,23 +194,17 @@ Tip: you can replicate the issue by changing to the process work dir and enterin
 
         
           <dt class="col-sm-3">Script ID</dt>
-          <dd class="col-sm-9"><code>7510a9c77fcf9a3d6c66b13adc161dc0</code></dd>
+          <dd class="col-sm-9"><code>5ac41768641eb77c64f6d313a9831282</code></dd>
         
 
         <dt class="col-sm-3">Workflow session</dt>
-        <dd class="col-sm-9"><code>d2637d7a-8b75-4ed4-b4dd-24e31eb42e05</code></dd>
+        <dd class="col-sm-9"><code>5a489388-6eef-4e32-8f1b-cd2cd9bb12c6</code></dd>
 
         
 
         <dt class="col-sm-3">Workflow profile</dt>
         <dd class="col-sm-9">standard</dd>
 
-        
-        <dt class="col-sm-3">Workflow container</dt>
-        <dd class="col-sm-9"><samp>[CNV_calling:/home/flben/projects/rrg-jacquese/All_user_common_folder/SOFTWARE/pgc-tcag_v2_latest.sif]</samp></dd>
-
-        <dt class="col-sm-3">Container engine</dt>
-        <dd class="col-sm-9"><samp>apptainer</samp></dd>
         
 
         
@@ -1104,7 +1032,7 @@ $(function() {
 
   // Nextflow report data
   window.data = { "trace":[
-{"task_id":"1","hash":"d1\/1e6f5d","native_id":"407407","process":"CNV_calling","module":"[apptainer\/1.3.5]","container":"\/home\/flben\/projects\/rrg-jacquese\/All_user_common_folder\/SOFTWARE\/pgc-tcag_v2_latest.sif","tag":"CNV_calling: ALSPAC09894851","name":"CNV_calling (CNV_calling: ALSPAC09894851)","status":"FAILED","exit":"1","submit":"1745359906555","start":"1745359906666","complete":"1745359907154","duration":"599","realtime":"488","%cpu":"-","%mem":"-","rss":"-","vmem":"-","peak_rss":"-","peak_vmem":"-","rchar":"-","wchar":"-","syscr":"-","syscw":"-","read_bytes":"-","write_bytes":"-","attempt":"1","workdir":"\/lustre06\/project\/6008022\/flben\/cnv_annotation\/scripts\/workflow\/CNV-Annotation-pipeline\/modules\/per_sampleID\/work\/d1\/1e6f5d8656c372012af3ad87074b07","script":"\n    # Default parameters can be set here\n    gcdir=\"\/usr\/local\/quantisnp\/gc\/b38\/\"\n    minlength=1000\n    minconf=15.0\n    chr=\"1:23\"\n    hmm_file=\"\/usr\/local\/bin\/hhall.hmm\"\n    levels=\"\/usr\/local\/quantisnp\/bin\/config\/levels.dat\"\n    config=\"\/usr\/local\/quantisnp\/bin\/config\/params.dat\"\n\n    echo \"Process Running: CNV_calling for ALSPAC09894851\"\n\n    set -euo pipefail\n\n    echo \"Extracting gender from sex file...\"\n    zgrep -P \"ALSPAC09894851\t\" plink_metadata.tsv | cut -f1,2 > sexfile.tsv\n    gender=$(cut -f2 sexfile.tsv)\n\n\n    echo \"Gender: $gender\"\n    if [[ \"$gender\" != \"male\" && \"$gender\" != \"female\" ]]; then\n        echo \"ERROR: Invalid gender \'$gender\' for sample ID ALSPAC09894851. Expected \'male\' or \'female\'.\"\n        exit 1\n    fi\n\n\n    echo \"Running PennCNV on autosomes...\"\n    \/usr\/bin\/time -v perl \/usr\/local\/bin\/detect_cnv.pl --test         --pfbfile pfb.tsv         --hmmfile ${hmm_file}         --logfile ALSPAC09894851.penncnv.log         --minlength ${minlength}         --minconf ${minconf}         --output ALSPAC09894851.penncnv.out         --gcmodelfile gcModel.tsv         ALSPAC09894851.BAF_LRR_Probes.tsv\n            \n    echo \"Running PennCNV on ChrX...\"\n    \/usr\/bin\/time -v perl \/usr\/local\/bin\/detect_cnv.pl --test         --pfbfile pfb.tsv         --hmmfile ${hmm_file}         --logfile ALSPAC09894851.penncnv.chrx.log         --minlength ${minlength}         --minconf ${minconf}         --output ALSPAC09894851.penncnv.chrx.out         --gcmodelfile gcModel.tsv         --sexfile sexfile.tsv         --chrx         ALSPAC09894851.BAF_LRR_Probes.tsv\n\n\n    echo \"Running QuantiSNP...\"\n    export MCR_CACHE_ROOT=\"tmp\/mcr_cache\"\n    mkdir -p \"$MCR_CACHE_ROOT\"\n    \n    \/usr\/bin\/time -v quantisnp --chr ${chr}         --outdir .         --sampleid ALSPAC09894851         --gender ${gender}         --config ${config}         --levels ${levels}         --gcdir ${gcdir}         --input-files ALSPAC09894851.BAF_LRR_Probes.tsv         --doXcorrect --verbose &> ALSPAC09894851.quantisnp.log\n\n    mv ALSPAC09894851.cnv ALSPAC09894851.quantisnp.cnv\n\n    echo \"Merging CNV results...\"\n    cat ALSPAC09894851.penncnv.chrx.out ALSPAC09894851.penncnv.out > ALSPAC09894851.penncnv.cnv\n    ","scratch":"-","queue":"-","cpus":"1","memory":"-","disk":"-","time":"-","env":"PATH=$PATH:\/lustre06\/project\/6008022\/flben\/cnv_annotation\/scripts\/workflow\/CNV-Annotation-pipeline\/modules\/per_sampleID\/bin\n","error_action":"TERMINATE","vol_ctxt":"-","inv_ctxt":"-","hostname":"-","cpu_model":"-"}], "summary":[{"cpuUsage":null,"process":"CNV_calling","mem":null,"memUsage":null,"timeUsage":null,"vmem":null,"reads":null,"cpu":null,"time":{"mean":488,"min":488,"q1":488,"q2":488,"q3":488,"max":488,"minLabel":"CNV_calling (CNV_calling: ALSPAC09894851)","maxLabel":"CNV_calling (CNV_calling: ALSPAC09894851)","q1Label":"CNV_calling (CNV_calling: ALSPAC09894851)","q2Label":"CNV_calling (CNV_calling: ALSPAC09894851)","q3Label":"CNV_calling (CNV_calling: ALSPAC09894851)"},"writes":null}] };
+{"task_id":"1","hash":"76\/e35544","native_id":"1710017","process":"collect_plink_metadata","module":"-","container":"-","tag":"collect_plink_metadata","name":"collect_plink_metadata (collect_plink_metadata)","status":"COMPLETED","exit":"0","submit":"1745407878948","start":"1745407879036","complete":"1745407888228","duration":"9280","realtime":"6704","%cpu":"90.1","%mem":"0.0","rss":"57802752","vmem":"102027452416","peak_rss":"57802752","peak_vmem":"102096412672","rchar":"4929559684","wchar":"1246017860","syscr":"6711","syscw":"3594","read_bytes":"2326664438","write_bytes":"1235120128","attempt":"1","workdir":"\/lustre06\/project\/6008022\/flben\/cnv_annotation\/scripts\/workflow\/CNV-Annotation-pipeline\/modules\/data_from_plink\/work\/76\/e35544f2e885e3217ccf31b84e5ef2","script":"\n    echo \"Process Running: collect_plink_metadata\"\n\n    plink_get_sex_callrate.sh \"ALSPAC\" \"ALSPAC09900260.BAF_LRR_Probes.tsv\" \"plink_metadata.tsv\"\n    ","scratch":"-","queue":"-","cpus":"1","memory":"-","disk":"-","time":"-","env":"PATH=$PATH:\/lustre06\/project\/6008022\/flben\/cnv_annotation\/scripts\/workflow\/CNV-Annotation-pipeline\/modules\/data_from_plink\/bin\n","error_action":"-","vol_ctxt":"1727","inv_ctxt":"72","hostname":"-","cpu_model":"AMD EPYC 7532 32-Core Processor"}], "summary":[{"cpuUsage":{"mean":90.1,"min":90.1,"q1":90.1,"q2":90.1,"q3":90.1,"max":90.1,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"process":"collect_plink_metadata","mem":{"mean":57802752,"min":57802752,"q1":57802752,"q2":57802752,"q3":57802752,"max":57802752,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"memUsage":null,"timeUsage":null,"vmem":{"mean":102096412672,"min":102096412672,"q1":102096412672,"q2":102096412672,"q3":102096412672,"max":102096412672,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"reads":{"mean":4929559684,"min":4929559684,"q1":4929559684,"q2":4929559684,"q3":4929559684,"max":4929559684,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"cpu":{"mean":90.1,"min":90.1,"q1":90.1,"q2":90.1,"q3":90.1,"max":90.1,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"time":{"mean":6704,"min":6704,"q1":6704,"q2":6704,"q3":6704,"max":6704,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"},"writes":{"mean":1246017860,"min":1246017860,"q1":1246017860,"q2":1246017860,"q3":1246017860,"max":1246017860,"minLabel":"collect_plink_metadata (collect_plink_metadata)","maxLabel":"collect_plink_metadata (collect_plink_metadata)","q1Label":"collect_plink_metadata (collect_plink_metadata)","q2Label":"collect_plink_metadata (collect_plink_metadata)","q3Label":"collect_plink_metadata (collect_plink_metadata)"}}] };
 
   </script>
 

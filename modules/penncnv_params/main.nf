@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-// NXF_OFFLINE=true  nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
+// NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
 
 /*
  * This pipeline processes BAF+LRR probe files from a cohort of individuals
@@ -94,14 +94,12 @@ process generate_pfb {
     """
 }
 
-// compile_pfb.pl \
-//     -listfile "$list_best_BAF_LRR_Probes" \
-//     -out 'pfb.tsv'
-
 
 // Step 4: Create a GC model file by mapping GC content to SNPs using genomic windows
 process generate_gcmodel {
     tag "generate_gcmodel"
+
+    executor "local"
 
     input:
     path gc_content_windows // GC content by genomic window (e.g., from precomputed genome-wide scan)
@@ -131,8 +129,8 @@ process generate_gcmodel {
 workflow {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
-    plink_metadata = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/27/ad6229a5f670de52fd1f7b8fabf8ac/plink_metadata.tsv")
-    gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_windows_GRCh37.bed")
+    plink_metadata = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/76/e35544f2e885e3217ccf31b84e5ef2//plink_metadata.tsv")
+    gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_1k_windows_GRCh37.bed")
 
     // Step 1
     generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)

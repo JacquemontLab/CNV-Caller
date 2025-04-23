@@ -15,7 +15,8 @@ module load samtools
 samtools faidx Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz
 
 
-## Finally, the GC content was computed across fixed-width genomic windows (999 bp) using the command:
+## Finally, the GC content was computed across fixed-width genomic windows (999 bp) using the command
+## output (Chr\tStart\tEnd\tGC):
 ./compute_gc_content_windows.sh <genome_fasta.bgz> gc_content_windows_GRChXXXX.bed 999
 
 ./compute_gc_content_windows.sh Homo_sapiens.GRCh37.dna.primary_assembly.fa.bgz gc_content_1k_windows_GRCh37.bed 999
@@ -23,6 +24,7 @@ samtools faidx Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz
 
 
 ## Create GCdir for QuantiSNP input
+## outputs (Start\tEnd\tGC):
 mkdir -p GRCh37_GCdir
 awk -F'\t' '{
     chr=$1;

@@ -1,2 +1,0 @@
-task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
-1	d1/1e6f5d	407407	CNV_calling (CNV_calling: ALSPAC09894851)	FAILED	1	2025-04-22 18:11:46.555	599ms	488ms	-	-	-	-	-
