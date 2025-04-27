@@ -1,5 +1,0 @@
-task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
-1	f4/7c4e30	3753918	generate_list_of_path_to_BAF_LRR_Probes (generate_list_of_path_to_BAF_LRR_Probes)	COMPLETED	0	2025-04-23 07:53:00.839	349ms	109ms	55.9%	10.5 MB	450.2 MB	1.4 MB	2.6 MB
-2	ba/cac2e1	3754086	identify_1000_best_sampleid (identify_1000_best_sampleid)	COMPLETED	0	2025-04-23 07:53:01.325	295ms	56ms	73.7%	3.2 MB	217.7 MB	4.1 MB	1.2 MB
-3	c2/cf2607	3754245	generate_pfb (generate_pfb)	COMPLETED	0	2025-04-23 07:53:01.656	11m 16s	11m 15s	345.0%	96.4 GB	110.5 GB	37.1 GB	13.6 GB
-4	d8/5d41d5	3841275	generate_gcmodel (generate_gcmodel)	COMPLETED	0	2025-04-23 08:04:17.567	2.3s	704ms	39.1%	7.6 MB	240.5 MB	27.5 MB	29 MB
