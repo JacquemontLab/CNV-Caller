@@ -7,7 +7,7 @@
 .nextflow.log
 *.nextflow.*
 
-# Explicitly re-include important Nextflow output files
-!report-*.html
-!trace-*.txt
+# Ignore report and trace files recursively
+report-*.html
+trace-*.txt
 # ------------------------------------------------------------------------------
