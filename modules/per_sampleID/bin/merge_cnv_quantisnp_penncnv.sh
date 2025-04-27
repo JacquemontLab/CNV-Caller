@@ -117,7 +117,8 @@ trap cleanup EXIT
 bedtools merge -i "$combined_bed" -c 4,5,6,6 -o distinct,max,max,count > "$merged_bed"
 
 # Add header and split back SampleID and Chr from field 1
-(echo -e "SampleID\tChr\tStart\tEnd\tCopy_Number\tConfidence_max\tNum_Probes_max\tNum_Merged_CNVs" && awk -F'\t' '{split($1, arr, ","); print arr[1] "\t" arr[2] "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7}' "$merged_bed") > "$merged_tsv"
+(echo -e "SampleID\tChr\tStart\tEnd\tCopy_Number\tConfidence_max\tNum_Probes_max\tNum_Merged_CNVs" && \
+    awk -F'\t' '{split($1, arr, ","); print arr[1] "\t" arr[2] "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7}' "$merged_bed") > "$merged_tsv"
 
 
 

@@ -8,12 +8,10 @@ process CNV_calling {
     tag "CNV_calling: ${sample_id}"
 
     input:
-    tuple val(sample_id), path(BAF_LRR_Probes), path(pfb_file), path(gcmodel_file), path(plink_metadata), path(gcdir)
-
+    tuple val(sample_id), path(BAF_LRR_Probes), path(pfb_file), path(gcmodel_file), path(from_plink_extracted_data), path(gcdir)
 
     output:
     tuple val(sample_id), path(BAF_LRR_Probes), path("${sample_id}.quantisnp.cnv"), path("${sample_id}.penncnv.cnv"), path("${sample_id}.penncnv.log")
-
 
     script:
     """
@@ -28,7 +26,7 @@ process CNV_calling {
     set -euo pipefail
 
     echo "Extracting gender from sex file..."
-    zgrep -P "${sample_id}\t" ${plink_metadata} | cut -f1,2 > sexfile.tsv
+    zgrep -P "${sample_id}\t" ${from_plink_extracted_data} | cut -f1,2 > sexfile.tsv
     gender=\$(cut -f2 sexfile.tsv)
 
 
@@ -105,11 +103,11 @@ process merge_cnv_quantisnp_penncnv {
 
 
 
-params.list_path_to_BAF_LRR_Probes = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/f4/7c4e30*/list_path_to_BAF_LRR_Probes.tsv"
-params.pfb_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/c2/cf2607*/pfb.tsv"
-params.gcmodel_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/a5/6ea189cd1a9453de83807dc408fdf0/gcModel.tsv"
+params.list_path_to_BAF_LRR_Probes = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/dc/424e5e2256e1e965f0c3a95a91fb15/list_path_to_BAF_LRR_Probes.tsv"
+params.pfb_file = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/5d/2a4f9ea2fba78f07dd2385b1925729/pfb.tsv"
+params.gcmodel_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/2f/7c956bea5daf68b4ef3b8cb534b1a2/gcModel.tsv"
 params.gcDir = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/GRCh37_GCdir/"
-params.plink_metadata = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/76/e35544f2e885e3217ccf31b84e5ef2/plink_metadata.tsv"
+params.from_plink_extracted_data = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv"
 
 
 workflow {
@@ -134,26 +132,48 @@ workflow {
     // 2. Static file channels
     pfb_file_ch = file(params.pfb_file)
     gcmodel_file_ch = file(params.gcmodel_file)
-    plink_metadata_ch = file(params.plink_metadata)
+    from_plink_extracted_data_ch = file(params.from_plink_extracted_data)
     gcDir_ch = file(params.gcDir)
 
-    cnv_inputs = sample_inputs
+    // cnv_inputs = sample_inputs
+    //     .map { sample -> 
+    //         tuple(sample[0], sample[1], pfb_file_ch, gcmodel_file_ch, from_plink_extracted_data_ch, gcDir_ch)
+    //     }
+    def cnv_inputs = sample_inputs
         .map { sample -> 
-            tuple(sample[0], sample[1], pfb_file_ch, gcmodel_file_ch, plink_metadata_ch,gcDir_ch)
+            tuple(sample[0], sample[1], pfb_file_ch, gcmodel_file_ch, from_plink_extracted_data_ch, gcDir_ch)
         }
 
-    cnv_inputs | CNV_calling | merge_cnv_quantisnp_penncnv
+    // Adding the genome_version and regions_file as the first tuple
+    // def genome_version = "GRCh37"
+    // def regions_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/Genome_Regions_data.tsv"
 
+    // def genome_info_tuple = tuple(genome_version, file(regions_file))
 
-    static_inputs = Channel
-    .from(pfb_file_ch, gcmodel_file_ch, plink_metadata_ch, gcDir_ch)
-    .map { files ->
-        tuple(files[0], files[1], files[2], files[3])
-    }
+    // // Merge both tuples for the final input to the merge_cnv_quantisnp_penncnv process
+    // def cnv_inputs_with_genome = cnv_inputs
+    //     .map { sample -> 
+    //         tuple(sample[0], sample[1], sample[2], sample[3], sample[4], sample[5], genome_info_tuple[0], genome_info_tuple[1])
+    //     }
 
-    // 4. Merge cnv_inputs and static_inputs and pass to the merge_cnv_quantisnp_penncnv process
-    cnv_inputs.combine(static_inputs)
-        .set { combined_inputs }
+    // cnv_inputs | CNV_calling | merge_cnv_quantisnp_penncnv
 
-    combined_inputs | merge_cnv_quantisnp_penncnv
+    // Define the genome_version and regions_file for merging
+    def genome_version = "GRCh37"
+    def regions_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/Genome_Regions_data.tsv"
+
+    // Create a tuple with genome information
+    def genome_info_tuple = tuple(genome_version, file(regions_file))
+
+    // Merge the genome info tuple with cnv_inputs
+    def cnv_inputs_with_genome = cnv_inputs
+        .map { sample -> 
+            tuple(sample[0], sample[1], sample[2], sample[3], sample[4], sample[5], genome_info_tuple[0], genome_info_tuple[1])
+        }
+
+    // Debugging step: print the structure of the merged inputs (optional)
+    cnv_inputs_with_genome.view()
+
+    // Pass the merged channel to the processes
+    cnv_inputs_with_genome | CNV_calling | merge_cnv_quantisnp_penncnv
 }
