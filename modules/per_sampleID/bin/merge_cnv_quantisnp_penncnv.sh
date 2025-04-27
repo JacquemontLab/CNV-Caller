@@ -18,12 +18,14 @@
 #       - compute_cnv_overlap_fraction.sh
 #
 # Usage:
-#   ./merge_cnv_quantisnp_penncnv.sh <quantisnp_file> <penncnv_file> <probe_file> <output_file>
+#   ./merge_cnv_quantisnp_penncnv.sh <quantisnp_file> <penncnv_file> <probe_file> <regions_file> <genome_version> <output_file>
 #
 # Arguments:
 #   <quantisnp_file>   : QuantiSNP CNV input file (gzipped QuantiSNP raw CNVs)
 #   <penncnv_file>     : PennCNV CNV input file (gzipped PennCNV raw CNVs)
-#   <probe_file>       : FinalReport file containing probe coordinates
+#   <probe_file>       : File containing BAF/LogR probe coordinates
+#   <regions_file>     : BED-like file of genome annotation regions (e.g., telomeres)
+#   <genome_version>   : Genome version string (e.g., GRCh37, GRCh38)
 #   <output_file>      : Output filename for the merged CNV results
 #
 ###############################################################################
@@ -36,10 +38,12 @@ if [ "$#" -ne 4 ]; then
     echo "Usage: $0 <quantisnp_file> <penncnv_file> <probe_file> <output_file>"
     echo ""
     echo "Arguments:"
-    echo "  <quantisnp_file> : Path to QuantiSNP raw CNVs file (.txt.gz)"
-    echo "  <penncnv_file>   : Path to PennCNV raw CNVs file (.txt.gz)"
-    echo "  <probe_file>     : Path to FinalReport with probe coordinates"
-    echo "  <output_file>    : Output filename for the merged CNV table"
+    echo "  <quantisnp_file>   : Path to QuantiSNP raw CNVs file (.txt.gz)"
+    echo "  <penncnv_file>     : Path to PennCNV raw CNVs file (.txt.gz)"
+    echo "  <probe_file>       : Path to BAF/LogR probe coordinates file"
+    echo "  <regions_file>     : Path to BED-like genome annotation file"
+    echo "  <genome_version>   : Genome version string (e.g., GRCh37, GRCh38)"
+    echo "  <output_file>      : Path to output file for merged CNV table"
     exit 1
 fi
 
@@ -47,8 +51,10 @@ fi
 # --------------------- Assign inputs --------------------- #
 input_file_quantisnp="$1"
 input_file_penncnv="$2"
-probe_coordinate="$3"
-output="$4"
+probe_file="$3"
+regions_file="$4"
+genome_version="$5"
+output="$6"
 
 # Get the directory of the currently running script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -92,8 +98,8 @@ trap cleanup EXIT
 ### --------------------- STEP 2: Remove PAR regions --------------------- ###
 
 # Remove CNVs in pseudoautosomal regions on ChrX with Copy_Number = 2 for each algorithm
-"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" GRCh37
-"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_pc" "$pc_clean" GRCh37
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" "$regions_file" ${genome_version}
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_pc" "$pc_clean" "$regions_file" ${genome_version}
 
 
 
@@ -118,7 +124,7 @@ bedtools merge -i "$combined_bed" -c 4,5,6,6 -o distinct,max,max,count > "$merge
 ### --------------------- STEP 4: Correct Probe Count --------------------- ###
 
 # Extract probe coordinates if not NaN in Log R Ratio column, and sort them
-awk '$4 != "NaN" {print "chr"$2"\t"$3"\t"$3}' "$probe_coordinate" | tail -n +2 | sort -k1,1 -k2,2n > "$probes_bed"
+awk '$4 != "NaN" {print "chr"$2"\t"$3"\t"$3}' "$probe_file" | tail -n +2 | sort -k1,1 -k2,2n > "$probes_bed"
 
 
 # Count number of probes overlapping each CNV
@@ -177,3 +183,4 @@ NR > 1 {  # Skip the first line (NR is the line number)
     
     print sample"\t"chr"\t"start"\t"end"\t"len"\t"copynumber"\t"conf_max"\t"nb_probe"\t"nb_cnv_merged"\t"quantisnp_overlap"\t"penncnv_overlap"\t"two_algo_overlap
 }' > "$output"
+

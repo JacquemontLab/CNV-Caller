@@ -51,7 +51,7 @@ process identify_1000_best_sampleid {
     executor "local"
 
     input:
-    path plink_metadata                  // File with sample ID, call rate, and imputed sex
+    path from_plink_extracted_data                  // File with sample ID, call rate, and imputed sex
     path list_path_to_BAF_LRR_Probes     // TSV file mapping SampleID to full path
 
     output:
@@ -62,7 +62,7 @@ process identify_1000_best_sampleid {
     echo "Process Running: identify_1000_best_sampleid"
  
     # Extract top 1000 samples by call rate (assumed to be column 3), skipping header
-    tail -n +2 "$plink_metadata" | sort -k3,3nr | cut -f1 | head -n 1000 > SampleID_list
+    tail -n +2 "$from_plink_extracted_data" | sort -k3,3nr | cut -f1 | head -n 1000 > SampleID_list
     
     # Filter original file list to keep only those 1000 samples
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' SampleID_list $list_path_to_BAF_LRR_Probes | cut -f2 > list_best_BAF_LRR_Probes.txt
@@ -129,7 +129,7 @@ process generate_gcmodel {
 workflow {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
-    plink_metadata = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/76/e35544f2e885e3217ccf31b84e5ef2//plink_metadata.tsv")
+    from_plink_extracted_data = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/4a/f2ffda723b29090bd5d2736cf4ea58/from_plink_extracted_data.tsv")
     gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_1k_windows_GRCh37.bed")
 
     // Step 1
@@ -137,7 +137,7 @@ workflow {
 
     // Step 2
     identify_1000_best_sampleid(
-        plink_metadata,
+        from_plink_extracted_data,
         generate_list_of_path_to_BAF_LRR_Probes.out
     )
 

@@ -18,8 +18,6 @@ process CNV_calling {
     script:
     """
     # Default parameters can be set here
-    minlength=1000
-    minconf=15.0
     chr="1:23"
     hmm_file="/usr/local/bin/hhall.hmm"
     levels="/usr/local/quantisnp/bin/config/levels.dat"
@@ -46,8 +44,6 @@ process CNV_calling {
         --pfbfile ${pfb_file} \
         --hmmfile \${hmm_file} \
         --logfile ${sample_id}.penncnv.log \
-        --minlength \${minlength} \
-        --minconf \${minconf} \
         --output ${sample_id}.penncnv.out \
         --gcmodelfile ${gcmodel_file} \
         ${BAF_LRR_Probes}
@@ -57,8 +53,6 @@ process CNV_calling {
         --pfbfile ${pfb_file} \
         --hmmfile \${hmm_file} \
         --logfile ${sample_id}.penncnv.chrx.log \
-        --minlength \${minlength} \
-        --minconf \${minconf} \
         --output ${sample_id}.penncnv.chrx.out \
         --gcmodelfile ${gcmodel_file} \
         --sexfile sexfile.tsv \

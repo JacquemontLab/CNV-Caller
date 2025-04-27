@@ -1,2 +1,0 @@
-task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
-1	76/e35544	1710017	collect_plink_metadata (collect_plink_metadata)	COMPLETED	0	2025-04-23 07:31:18.948	9.3s	6.7s	90.1%	55.1 MB	95.1 GB	4.6 GB	1.2 GB

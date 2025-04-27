@@ -27,6 +27,14 @@ genome_used="$1"
 output_file="$2"
 width="${3:-999}"  # default to 999 if not specified
 
+# Create temp files with unique names
+chr_sizes_tmp=$(mktemp --suffix=_chr_sizes.tsv)
+windows_tmp=$(mktemp --suffix=_windows.bed)
+nuc_tmp=$(mktemp --suffix=_nuc.bed)
+
+# Clean up temp files on exit
+trap "rm -f '$chr_sizes_tmp' '$windows_tmp' '$nuc_tmp'" EXIT
+
 
 # Step 1: Generate chromosome sizes from genome fasta
 zcat "$genome_used" | awk '
@@ -37,16 +45,23 @@ zcat "$genome_used" | awk '
         split($0, arrscnd, ":");
         seq_length = arrscnd[6];
         print chr "\t" seq_length
-    }' > genome_chr_sizes.tsv
+    }' > "$chr_sizes_tmp"
 
 
 # Step 2: Create fixed-width genomic windows (999 bp) over the genome
-bedtools makewindows -g genome_chr_sizes.tsv -w ${width} -s $((width + 1)) > genome_${width}bps.bed
+bedtools makewindows -g "$chr_sizes_tmp" -w ${width} -s $((width + 1)) > "$windows_tmp"
 
 # Step 3: Compute GC content in each window
-bedtools nuc -fi "$genome_used" -bed genome_${width}bps.bed > genome_nuc_${width}.bed
+bedtools nuc -fi "$genome_used" -bed "$windows_tmp" > "$nuc_tmp"
 
 # Step 4: Extract relevant columns: chr, start, end, GC fraction
-awk -F "\t" -v OFS="\t" '{if (FNR>1) {print $1, $2, $3, $5}}' genome_nuc_${width}.bed > "$output_file"
-
-rm genome_nuc_${width}.bed genome_${width}bps.bed genome_chr_sizes.bed
+awk -F "\t" -v OFS="\t" 'FNR > 1 {
+    gc_num = $7 + $8;                    # G_count + C_count
+    atgc_num = $6 + $7 + $8 + $9;        # A + G + C + T
+   if (atgc_num == 0) {
+        gc_frac = "NA";
+    } else {
+        gc_frac = gc_num / atgc_num;
+    }
+    print $1, $2, $3, gc_frac;
+}' "$nuc_tmp" > "$output_file"

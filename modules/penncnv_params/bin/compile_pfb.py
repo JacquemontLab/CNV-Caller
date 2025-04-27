@@ -28,7 +28,12 @@ import multiprocessing as mp  # For parallel processing
 
 #
 # Input:
-# - listfile: A text file containing a list of paths to SNP data files (one per line).
+# - listfile: A text file containing a list of paths to SNP signal intensity files (one per line).
+#   Each file should have columns like:
+#     Name    Chr    Position    XXSampleIDXX.Log R Ratio    XXSampleIDXX.B Allele Freq
+#   Example:
+#     rs217682    14    62356724    -0.0639626951149    0.492056429742
+#
 # - output: Path to the output file where results will be saved. If not provided,
 #           the output will be printed to the standard output.
 # - num_cpu: Number of CPU cores to use for parallel processing.

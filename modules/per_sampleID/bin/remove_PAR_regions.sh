@@ -2,11 +2,13 @@
 
 ###############################################################################
 # Script Name: remove_PAR_regions.sh
-# Description: This script processes a CNV file, filters based on the genome version,
-#              generates a BED file, removes rows that match PAR regions and with Copy_Number = 2, and
-#              outputs the result while cleaning up intermediate files.
+# Description: This script processes a CNV file and removes entries that overlap 
+#              with pseudoautosomal regions (PAR or XTR) for a given genome version.
+#              Specifically, it filters out regions with Copy_Number = 2 within PAR/XTR,
+#              as such duplications are not considered reliable due to their presence
+#              on both the X and Y chromosomes.
 #
-# Usage: ./remove_PAR_regions.sh <input_file[.gz]> <output_file> <genome_version> <PAR_regions_file>
+# Usage: ./remove_PAR_regions.sh <input_file[.gz]> <output_file> <regions_file> <genome_version>
 #
 # Author: Florian Bénitière
 # Date: April 2025
@@ -16,20 +18,19 @@
 # Check that at least 2 arguments are provided
 if [ "$#" -lt 2 ]; then
     echo "Error: Incorrect number of arguments."
-    echo "Usage: $0 <input_file[.gz]> <output_file> <genome_version> <PAR_regions_file>"
+    echo "Usage: $0 <input_file[.gz]> <output_file> <regions_file> <genome_version>"
     echo ""
     echo "Arguments:"
     echo "  <input_file[.gz]>      : The input CNV file (either gzipped or uncompressed)."
     echo "                          Must contain at least the following columns:"
     echo "                          SampleID\tChr\tStart\tEnd\tCopy_Number"
     echo "  <output_file>          : The TSV output file where the results will be saved (e.g., 'output_results.tsv')."
+    echo "  <regions_file>          : Path to the genome regions file in TSV format."
     echo "  <genome_version>       : The genome version to filter by (e.g., GRCh37 or GRCh38)."
     echo "                          Default: GRCh38"
-    echo "  <PAR_regions_file>     : Path to the PAR regions file in TSV format (optional)."
-    echo "                          Default: /home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/ressources/PAR_regions.tsv"
     echo ""
     echo "Example Usage:"
-    echo "  $0 input_data output_results.tsv GRCh38 /path/to/PAR_regions.tsv"
+    echo "  $0 input_data output_results.tsv /path/to/regions_file.tsv GRCh38"
     exit 1
 fi
 
@@ -37,8 +38,8 @@ fi
 # Parse input arguments
 input_file="$1"
 output_file="$2"
-genome_version="${3:-GRCh38}"   # Default to GRCh38 if not provided
-PAR_regions="${4:-/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/PAR_regions.tsv}" # Default PAR regions path
+regions_file="$3" # Default PAR regions path
+genome_version="${4:-GRCh38}"   # Default to GRCh38 if not provided
 
 # Determine whether the input file is gzipped
 if [[ "$input_file" == *.gz ]]; then
@@ -56,11 +57,11 @@ header_update=$($read_cmd "$input_file" | head -n 1)
 
 # Create a temporary BED file with PAR regions matching the genome version
 bed_PAR=$(mktemp)
-if [ "$PAR_regions" != "none" ]; then
+if [ "$regions_file" != "none" ]; then
     awk -v genome="$genome_version" 'BEGIN { OFS="\t" }
-    NR > 1 && $1 == genome {
-        print $3, $4, $5
-    }' "$PAR_regions" > "$bed_PAR"
+    NR > 1 && ($4 == "PAR1" || $4 == "PAR2" || $4 == "XTR") && $5 == genome {
+        print $1, $2, $3
+    }' "$regions_file" > "$bed_PAR"
 fi
 
 # Create temporary files for CNVs in chrX with copy number 2 (possibly in PAR) vs all other CNVs

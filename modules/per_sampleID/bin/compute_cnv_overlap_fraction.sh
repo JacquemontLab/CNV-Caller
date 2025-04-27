@@ -7,7 +7,7 @@
 #              calculate overlap fractions. The results are stored in a
 #              tab-delimited, gzipped TSV file for downstream analysis.
 #
-# Usage: ./process_cnv_compute_cnv_overlap_fractionverlap.sh <input_file[.gz]> <algorithms_to_overlap> <output_file[.gz]>
+# Usage: ./compute_cnv_overlap_fraction.sh <input_file[.gz]> <algorithms_to_overlap> <output_file[.gz]>
 #
 # Author: Florian Bénitière
 # Date: April 2025
