@@ -1,12 +1,13 @@
-# Ignore work directories
-work/
+# ------------------------------------------------------------------------------
+# Ignore all 'work' directories recursively (even if nested)
+**/work/
 
-# Ignore Nextflow specific files
-.nextflow/
-
-# Ignore Nextflow configuration and run files
+# Ignore all Nextflow hidden folders and files recursively
+**/.nextflow/
 .nextflow.log
 *.nextflow.*
-# Explicitly include report and trace files
+
+# Explicitly re-include important Nextflow output files
 !report-*.html
 !trace-*.txt
+# ------------------------------------------------------------------------------
