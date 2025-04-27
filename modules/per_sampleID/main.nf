@@ -2,6 +2,7 @@
 
 nextflow.enable.dsl=2
 
+// NXF_OFFLINE=true nextflow run main.nf -resume
 
 
 process CNV_calling {
@@ -42,15 +43,18 @@ process CNV_calling {
 
     echo "Running PennCNV on autosomes..."
     /usr/bin/time -v perl /usr/local/bin/detect_cnv.pl --test \
+        --conf \
         --pfbfile ${pfb_file} \
         --hmmfile \${hmm_file} \
         --logfile ${sample_id}.penncnv.log \
         --output ${sample_id}.penncnv.out \
         --gcmodelfile ${gcmodel_file} \
         ${BAF_LRR_Probes}
-            
+        
+        
     echo "Running PennCNV on ChrX..."
     /usr/bin/time -v perl /usr/local/bin/detect_cnv.pl --test \
+        --conf \
         --pfbfile ${pfb_file} \
         --hmmfile \${hmm_file} \
         --logfile ${sample_id}.penncnv.chrx.log \
@@ -130,14 +134,6 @@ workflow {
         .set { sample_inputs }
 
     sample_inputs.view()
-
-    // 2. Static file channels
-    // pfb_file = file(params.pfb_file)
-    // gcmodel_file = file(params.gcmodel_file)
-    // from_plink_extracted_data = file(params.from_plink_extracted_data)
-    // gcDir = file(params.gcDir)
-    // genome_version = params.genome_version
-    // regions_file = file(params.regions_file)
 
     cnv_inputs = sample_inputs
         .map { sample -> 

@@ -33,9 +33,9 @@
 set -euo pipefail
 
 # --------------------- Check input arguments --------------------- #
-if [ "$#" -ne 4 ]; then
+if [ "$#" -ne 6 ]; then
     echo "Error: Incorrect number of arguments."
-    echo "Usage: $0 <quantisnp_file> <penncnv_file> <probe_file> <output_file>"
+    echo "Usage: $0 <quantisnp_file> <penncnv_file> <probe_file> <regions_file> <genome_version> <output_file>"
     echo ""
     echo "Arguments:"
     echo "  <quantisnp_file>   : Path to QuantiSNP raw CNVs file (.txt.gz)"
