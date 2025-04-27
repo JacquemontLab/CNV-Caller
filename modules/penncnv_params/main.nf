@@ -129,7 +129,7 @@ process generate_gcmodel {
 workflow {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
-    from_plink_extracted_data = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/4a/f2ffda723b29090bd5d2736cf4ea58/from_plink_extracted_data.tsv")
+    from_plink_extracted_data = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv")
     gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_1k_windows_GRCh37.bed")
 
     // Step 1
