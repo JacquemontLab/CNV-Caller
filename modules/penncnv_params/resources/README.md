@@ -8,9 +8,12 @@
 Reference genomes downloaded on 16/04/2025 on 
 
 https://useast.ensembl.org/Homo_sapiens/Info/Index for GRCh38.p14
+
 wget https://ftp.ensembl.org/pub/release-113/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 
+
 https://grch37.ensembl.org/Homo_sapiens/Info/Index for GRCh37.p13
+
 wget https://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz
 
 
@@ -18,11 +21,14 @@ wget https://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapi
 module load tabix
 
 gunzip -c Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz | bgzip > Homo_sapiens.GRCh37.dna.primary_assembly.fa.bgz
+
 gunzip -c Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz | bgzip > Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz
+
 
 module load samtools
 
 samtools faidx Homo_sapiens.GRCh37.dna.primary_assembly.fa.bgz
+
 samtools faidx Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz
 
 
