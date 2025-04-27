@@ -86,6 +86,7 @@ process merge_cnv_quantisnp_penncnv {
     tag "merge_cnv_quantisnp_penncnv: ${sample_id}"
 
     input:
+    tuple val(genome_version), file(regions_file)
     tuple val(sample_id), file(BAF_LRR_Probes), file(quantisnp_file), file(penncnv_file), file(penncnv_logfile)
 
     output:
@@ -96,11 +97,12 @@ process merge_cnv_quantisnp_penncnv {
     """
     echo "Process Running: CNV_calling for ${sample_id}"
 
-    merge_cnv_quantisnp_penncnv.sh "$quantisnp_file" "$penncnv_file" "$BAF_LRR_Probes" ${sample_id}.CNVs.tsv
+    merge_cnv_quantisnp_penncnv.sh "$quantisnp_file" "$penncnv_file" "$BAF_LRR_Probes" "$regions_file" "$genome_version" ${sample_id}.CNVs.tsv
 
     extract_qc_penncnv.sh "$penncnv_logfile" ${sample_id}.PennCNV_QC.tsv
     """
 }
+
 
 
 params.list_path_to_BAF_LRR_Probes = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/f4/7c4e30*/list_path_to_BAF_LRR_Probes.tsv"
@@ -141,4 +143,17 @@ workflow {
         }
 
     cnv_inputs | CNV_calling | merge_cnv_quantisnp_penncnv
+
+
+    static_inputs = Channel
+    .from(pfb_file_ch, gcmodel_file_ch, plink_metadata_ch, gcDir_ch)
+    .map { files ->
+        tuple(files[0], files[1], files[2], files[3])
+    }
+
+    // 4. Merge cnv_inputs and static_inputs and pass to the merge_cnv_quantisnp_penncnv process
+    cnv_inputs.combine(static_inputs)
+        .set { combined_inputs }
+
+    combined_inputs | merge_cnv_quantisnp_penncnv
 }
