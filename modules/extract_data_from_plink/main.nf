@@ -3,6 +3,7 @@
 nextflow.enable.dsl=2
 // NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
 
+
 // Nextflow process to compute call rate, infer sex and family information from PLINK files
 process collect_plink_data {
     tag "collect_plink_data"  // Optional identifier for tracking/logging
@@ -12,7 +13,7 @@ process collect_plink_data {
     path one_baf_lrr_probes_file // A TSV file with probe IDs in the first column (used for filtering SNPs)
 
     output:
-    path "from_plink_extracted_data.tsv"  // Final output file with sample ID, call rate, and imputed sex
+    path "from_plink_extracted_data.tsv", emit: from_plink_extracted_data  // Final output file with sample ID, call rate, and imputed sex
 
     script:
     """
@@ -23,7 +24,37 @@ process collect_plink_data {
 }
 
 
-workflow {
+workflow PLINK_EXTRACTED_DATA {
+    take:
+        // Define inputs
+        plink_base_path
+        probes_file
+
+    main:
+        // Extract the base name (prefix) without directory and extension
+        plink_prefix = plink_base_path.split('/').last()
+
+        // Define the input channel for PLINK dataset prefix and files
+        plink_set = Channel.of(
+            tuple(
+                plink_prefix,
+                [
+                    file("${plink_base_path}.bed"),
+                    file("${plink_base_path}.bim"),
+                    file("${plink_base_path}.fam")
+                ]
+            )
+        )
+
+        // Call the process (or workflow) that uses these inputs
+        from_plink_extracted_data = collect_plink_data(plink_set, probes_file)
+
+    emit:
+        from_plink_extracted_data
+}
+
+
+workflow TEST {
     // Define the base output path for PLINK dataset
     plink_base_path = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/PLINK/ALSPAC"
     

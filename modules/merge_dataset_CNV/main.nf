@@ -1,8 +1,15 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
+
+/*
+ * This Nextflow pipeline concatenates multiple CNV and PennCNV QC files
+ * into two unified output tables using a custom merge script.
+ */
+ 
 // NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
 
+// Define the first process: concatenate CNV files
 process concatenated_CNVs {
     tag "concatenated_CNVs"
     input:
@@ -19,6 +26,7 @@ process concatenated_CNVs {
     """
 }
 
+// Define the second process: concatenate PennCNV QC files
 process concatenated_penncnv_qc {
     tag "concatenated_penncnv_qc"
     input:
@@ -35,8 +43,9 @@ process concatenated_penncnv_qc {
     """
 }
 
+// Define the workflow section: controls how data moves through processes
 workflow {
-    // Group all files into a single list (tuple)
+    // Create a Channel from a list of CNV files
     file_channel = Channel.from([
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09897249.CNVs.tsv"),
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09902309.CNVs.tsv")
@@ -49,15 +58,15 @@ workflow {
     concatenated_CNVs(file_channel)
 
 
-    // Group all files into a single list (tuple)
+    // Create a Channel from a list of PennCNV QC files)
     file_channel_qc = Channel.from([
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09897249.PennCNV_QC.tsv"),
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09902309.PennCNV_QC.tsv")
     ])
 
-    // Then, emit as a single value
+    // Run the first process with the CNV files
     file_channel_qc = file_channel_qc.collect()
 
-    // Launch the process
+    // Run the second process with the QC files
     concatenated_penncnv_qc(file_channel_qc)
 }

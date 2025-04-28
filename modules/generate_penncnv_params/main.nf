@@ -124,29 +124,63 @@ process generate_gcmodel {
 }
 
 
+// Workflow definition tying everything together
+workflow PENNCNV_PARAMS {
+    take:
+        // Define inputs
+        directory_BAF_LRR_Probes_by_sample
+        from_plink_extracted_data
+        gc_content_windows
+
+    main:
+        // Step 1. Index all BAF+LRR files.
+        generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
+
+        // Step 2. Identify the top 1000 samples by call rate.
+        identify_1000_best_sampleid(
+            from_plink_extracted_data,
+            generate_list_of_path_to_BAF_LRR_Probes.out
+        )
+
+        // Step 3. Generate a PFB file.
+        pfb_file = generate_pfb(
+            identify_1000_best_sampleid.out
+        )
+
+        // Step 4. Annotate SNPs with GC content using precomputed genomic windows.
+        gc_model = generate_gcmodel(
+            gc_content_windows,
+            generate_pfb.out
+        )
+
+    emit:
+        pfb_file
+        gc_model
+}
+
 
 // Workflow definition tying everything together
-workflow {
+workflow TEST {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
     from_plink_extracted_data = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv")
     gc_content_windows = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_1k_windows_GRCh37.bed")
 
-    // Step 1
+    // Step 1. Index all BAF+LRR files.
     generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
 
-    // Step 2
+    // Step 2. Identify the top 1000 samples by call rate.
     identify_1000_best_sampleid(
         from_plink_extracted_data,
         generate_list_of_path_to_BAF_LRR_Probes.out
     )
 
-    // Step 3
+    // Step 3. Generate a PFB file.
     generate_pfb(
         identify_1000_best_sampleid.out
     )
 
-    // Step 4
+    // Step 4. Annotate SNPs with GC content using precomputed genomic windows.
     generate_gcmodel(
         gc_content_windows,
         generate_pfb.out
