@@ -100,6 +100,7 @@ fi
 # Pre-process CNV coordinates:
 temp_sorted_cnv_bed=$(mktemp)
 temp_cnv_bed=$(mktemp)
+temp_saved_for_merged_cnv_bed=$(mktemp)
 
 # - Combine columns 1 and 2 into a single column comma separated
 # - Sort the data based on columns 1 and 2
@@ -110,10 +111,10 @@ cut -f2,3,4 "$temp_sorted_cnv_bed" > "$temp_cnv_bed"
 
 $read_cmd "$input_file" | tail -n +2 | awk 'BEGIN{OFS="\t"}
 {
-    print $2, $3, $4, $0
+    print $2, $3, $4, $1
 }' | sort -k1,1 -k2,2n > "$temp_cnv_bed"
 
-
+tail -n +2 "$input_file" | awk 'BEGIN{OFS="\t"} {$1=$1","$2; $2=""; print}' - | sort -k1,1 -k2,2n > "$temp_saved_for_merged_cnv_bed"
 
 
 # Loop through the regions and their corresponding BED files
@@ -152,11 +153,8 @@ for item in ${regions_to_overlap//,/ }; do
     bedtools intersect -a "$temp_cnv_bed" -b "$temp_non_overlap_bed" -wao > "$temp_overlap_bed"
 
 
-
- | bedtools merge -i - -c 7 -o sum >
-
-    awk 'BEGIN{OFS="\t"} NR>1{$1=$4","$5; $2=""; print}' "$temp_overlap_bed" | sort -k1,1 -k2,2n > "$temp_sorted_cnv_bed"
-
+    temp_sorted_cnv_bed=$(mktemp)
+    awk 'BEGIN{OFS="\t"} {$1=$4","$1; $4=""; print}' "$temp_overlap_bed" | sort -k1,1 -k2,2n | bedtools merge -i - -c 8 -o sum > "$temp_sorted_cnv_bed"
 
     # Calculate the fraction of overlap and append this information:
     # - Calculate the size of the interval (difference between start and end positions)
@@ -167,7 +165,7 @@ for item in ${regions_to_overlap//,/ }; do
             overlap = $NF;
             frac = overlap / size ;
             print $0, frac
-        }' "$temp_overlap_bed" > "$temp_frac_overlap_bed"
+        }' "$temp_sorted_cnv_bed" > "$temp_frac_overlap_bed"
 
     # Merge the CNV coordinates with the calculated overlap fraction
     temp_tmp_merging_algo_bed=$(mktemp)

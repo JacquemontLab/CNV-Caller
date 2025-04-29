@@ -150,7 +150,7 @@ workflow PENNCNV_PARAMS {
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.
         gc_model = generate_gcmodel(
             gc_content_windows,
-            generate_pfb.out
+            pfb_file
         )
 
     emit:

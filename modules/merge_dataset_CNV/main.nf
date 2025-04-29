@@ -60,7 +60,7 @@ workflow {
     concatenated_CNVs(file_channel)
 
 
-    Create a Channel from a list of PennCNV QC files)
+    // Create a Channel from a list of PennCNV QC files)
     file_channel_qc = Channel.from([
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09897249.PennCNV_QC.tsv"),
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09902309.PennCNV_QC.tsv")

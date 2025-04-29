@@ -118,28 +118,33 @@ process merge_cnv_callers_and_extract_qc {
 
 workflow CNV_CALLING {
     take:
-        sample_inputs
-        pfb_file
-        gcmodel_file
-        from_plink_extracted_data
-        gcDir
-        genome_version
-        regions_file
+        cnv_inputs
+        // genome_version
+        // regions_file
+        // sample_inputs
+        // pfb_file
+        // gcmodel_file
+        // from_plink_extracted_data
+        // gcDir
+        // genome_version
+        // regions_file
 
     main:
         // Map inputs to full tuple required by CNV_calling
-        cnv_inputs = sample_inputs
-            .map { sample -> 
-                tuple(sample[0], sample[1], pfb_file, gcmodel_file, from_plink_extracted_data, gcDir)
-            }
+        // cnv_inputs = sample_inputs
+        //     .map { sample -> 
+        //         tuple(sample[0], sample[1], pfb_file, gcmodel_file, from_plink_extracted_data, gcDir)
+        //     }
+
 
         // Chain the two processes:
-        cnv_inputs | CNV_calling | map { sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile -> 
-            tuple(sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile, genome_version, regions_file)
-        } | merge_cnv_callers_and_extract_qc
+        cnv_inputs | CNV_calling
+        //  | map { sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile -> 
+        //     tuple(sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile, genome_version, regions_file)
+        // } | merge_cnv_callers_and_extract_qc
 
     emit:
-        merge_cnv_callers_and_extract_qc
+        output = CNV_calling.out
 }
 
 
