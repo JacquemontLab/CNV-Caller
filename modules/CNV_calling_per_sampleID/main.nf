@@ -155,11 +155,11 @@ workflow {
     // Define all the input parameters manually
     list_path_to_BAF_LRR_Probes = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/dc/424e5e2256e1e965f0c3a95a91fb15/list_path_to_BAF_LRR_Probes.tsv"
     pfb_file = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/5d/2a4f9ea2fba78f07dd2385b1925729/pfb.tsv"
-    gcmodel_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/2f/7c956bea5daf68b4ef3b8cb534b1a2/gcModel.tsv"
-    from_plink_extracted_data = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv"
-    regions_file = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/Genome_Regions_data.tsv"
+    gcmodel_file = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/2f/7c956bea5daf68b4ef3b8cb534b1a2/gcModel.tsv"
+    from_plink_extracted_data = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv"
+    regions_file = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/per_sampleID/resources/Genome_Regions_data.tsv"
     genome_version = "GRCh37"
-    gcDir = "/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/" + params.genome_version + "_GCdir/"
+    gcDir = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/" + params.genome_version + "_GCdir/"
 
     // List of sample IDs you want to keep
     def selected_sample_ids = ["ALSPAC09897249", "ALSPAC09902309"]

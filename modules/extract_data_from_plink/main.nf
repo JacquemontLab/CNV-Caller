@@ -56,7 +56,7 @@ workflow PLINK_EXTRACTED_DATA {
 
 workflow {
     // Define the base output path for PLINK dataset
-    plink_base_path = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/PLINK/ALSPAC"
+    plink_base_path = "/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/PLINK/ALSPAC"
     
     // Extract the base name (prefix) without directory and extension
     plink_prefix = plink_base_path.split('/').last()  // Extract "prefix"
@@ -74,7 +74,7 @@ workflow {
         )
 
     Channel
-        .fromPath("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/ALSPAC09900260.BAF_LRR_Probes.tsv")       // A TSV file with probe IDs in column 1
+        .fromPath("/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/ALSPAC09900260.BAF_LRR_Probes.tsv")       // A TSV file with probe IDs in column 1
         .set { probes_file }
 
     // Run the metadata collection process
