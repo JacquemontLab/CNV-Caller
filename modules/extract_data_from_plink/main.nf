@@ -54,7 +54,7 @@ workflow PLINK_EXTRACTED_DATA {
 }
 
 
-workflow TEST {
+workflow {
     // Define the base output path for PLINK dataset
     plink_base_path = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/PLINK/ALSPAC"
     

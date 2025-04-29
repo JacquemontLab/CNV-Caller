@@ -51,6 +51,8 @@ workflow {
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09902309.CNVs.tsv")
     ])
 
+    file_channel.collectFile(name: "concatenated_CNVs.tsv", keepHeader: true, save: true)
+
     // Then, emit as a single value
     file_channel = file_channel.collect()
 
@@ -58,7 +60,7 @@ workflow {
     concatenated_CNVs(file_channel)
 
 
-    // Create a Channel from a list of PennCNV QC files)
+    Create a Channel from a list of PennCNV QC files)
     file_channel_qc = Channel.from([
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09897249.PennCNV_QC.tsv"),
         file("/home/flben/projects/rrg-jacqueese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test/ALSPAC09902309.PennCNV_QC.tsv")

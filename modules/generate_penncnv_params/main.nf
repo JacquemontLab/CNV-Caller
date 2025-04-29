@@ -134,12 +134,12 @@ workflow PENNCNV_PARAMS {
 
     main:
         // Step 1. Index all BAF+LRR files.
-        generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
+        path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
 
         // Step 2. Identify the top 1000 samples by call rate.
         identify_1000_best_sampleid(
             from_plink_extracted_data,
-            generate_list_of_path_to_BAF_LRR_Probes.out
+            path_list
         )
 
         // Step 3. Generate a PFB file.
@@ -154,13 +154,14 @@ workflow PENNCNV_PARAMS {
         )
 
     emit:
+        path_list
         pfb_file
         gc_model
 }
 
 
 // Workflow definition tying everything together
-workflow TEST {
+workflow {
     // Input parameters (define in config or command line)
     directory_BAF_LRR_Probes_by_sample = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
     from_plink_extracted_data = file("/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv")

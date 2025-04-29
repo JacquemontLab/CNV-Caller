@@ -35,6 +35,10 @@ fi
 
 
 ### --------------------- STEP 7: Overlap With Genomes Regions --------------------- ###
+cd ~/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test
+
+genome_version=GRCh37
+regions_file=/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/CNV_calling_per_sampleID/resources/Genome_Regions_data.tsv
 
 telomere_db=$(mktemp --suffix=.bed)
 awk -v genome="$genome_version" 'BEGIN {
@@ -64,7 +68,7 @@ NR > 1 && $4 == "segmentaldup" && $5 == genome {
 }' "$regions_file" > "$segmentaldup_db"
 
 # Set variable defining sources and files to overlap with
-algo_to_overlap="telomere:$telomere_db,centromere:$centromere_db,segmentaldup:$segmentaldup_db"
+regions_to_overlap="telomere:$telomere_db,centromere:$centromere_db,segmentaldup:$segmentaldup_db"
 
 cut -f2- "$output" > reduce.tsv
 
@@ -77,6 +81,7 @@ rm "$bed_PAR" "$telomere_db" "$centromere_db" "$segmentaldup_db"
 
 # Assign input and output from arguments
 input_file="$1"
+input_file=test.tsv
 regions_to_overlap="$2"
 output_file="$3"
 
@@ -101,11 +106,19 @@ temp_cnv_bed=$(mktemp)
 $read_cmd "$input_file" | tail -n +2 | sort -k1,1 -k2,2n > "$temp_sorted_cnv_bed"
 header_update=$($read_cmd "$input_file" | head -n 1)
 # - Extract the chr, start, and end columns
-cut -f1,2,3 "$temp_sorted_cnv_bed" > "$temp_cnv_bed"
+cut -f2,3,4 "$temp_sorted_cnv_bed" > "$temp_cnv_bed"
+
+$read_cmd "$input_file" | tail -n +2 | awk 'BEGIN{OFS="\t"}
+{
+    print $2, $3, $4, $0
+}' | sort -k1,1 -k2,2n > "$temp_cnv_bed"
+
+
 
 
 # Loop through the regions and their corresponding BED files
 for item in ${regions_to_overlap//,/ }; do
+    
     # Extract region name (before the colon)
     algo=${item%%:*}
     # Extract BED file name (after the colon)
@@ -128,7 +141,7 @@ for item in ${regions_to_overlap//,/ }; do
         read_cmd="cat"
     fi
 
-    $read_cmd "$tsvfile" | tail -n +2 | cut -f1,2,3 | sort -k1,1 -k2,2n > "$temp_sorted_algo_bed"
+    $read_cmd "$tsvfile" | tail -n +2 | sort -k1,1 -k2,2n > "$temp_sorted_algo_bed"
     
     # Use bedtools to find intersections between CNV coordinates and the current region's BED file:
     # - Perform a "wao" (write all overlaps) intersection
@@ -136,7 +149,13 @@ for item in ${regions_to_overlap//,/ }; do
     temp_non_overlap_bed=$(mktemp)
     temp_overlap_bed=$(mktemp)
     bedtools merge -i "$temp_sorted_algo_bed" > "$temp_non_overlap_bed"
-    bedtools intersect -a "$temp_cnv_bed" -b "$temp_non_overlap_bed" -wao | bedtools merge -i - -c 7 -o sum > "$temp_overlap_bed"
+    bedtools intersect -a "$temp_cnv_bed" -b "$temp_non_overlap_bed" -wao > "$temp_overlap_bed"
+
+
+
+ | bedtools merge -i - -c 7 -o sum >
+
+    awk 'BEGIN{OFS="\t"} NR>1{$1=$4","$5; $2=""; print}' "$temp_overlap_bed" | sort -k1,1 -k2,2n > "$temp_sorted_cnv_bed"
 
 
     # Calculate the fraction of overlap and append this information:

@@ -92,6 +92,7 @@ process CNV_calling {
     """
 }
 
+
 // Merge CNV callers results and extract QC metrics
 process merge_cnv_callers_and_extract_qc {
     tag "merge_cnv_callers_and_extract_qc: ${sample_id}"
@@ -117,8 +118,7 @@ process merge_cnv_callers_and_extract_qc {
 
 workflow CNV_CALLING {
     take:
-        list_path_to_BAF_LRR_Probes
-        selected_sample_ids
+        sample_inputs
         pfb_file
         gcmodel_file
         from_plink_extracted_data
@@ -127,41 +127,25 @@ workflow CNV_CALLING {
         regions_file
 
     main:
-        // 1. Input channel from TSV sample_inputs dictionnary : {SampleID:Path_to_File_BAF_LRR_Probes}
-        Channel
-            .fromPath(list_path_to_BAF_LRR_Probes)
-            .splitCsv(header: true, sep: '\t')
-            .filter { row ->                                 
-                row.SampleID in selected_sample_ids         // Keep only rows with desired SampleIDs
-            }
-            .map { row -> 
-                [row.SampleID, file(row.Path_to_File_BAF_LRR_Probes)]
-            }
-            .set { sample_inputs }
-
-        // (Optional) view the inputs - useful for debugging
-        sample_inputs.view()
-
         // Map inputs to full tuple required by CNV_calling
         cnv_inputs = sample_inputs
             .map { sample -> 
-                tuple(sample[0], sample[1], file(pfb_file), file(gcmodel_file), file(from_plink_extracted_data), file(gcDir))
+                tuple(sample[0], sample[1], pfb_file, gcmodel_file, from_plink_extracted_data, gcDir)
             }
 
         // Chain the two processes:
-        output = cnv_inputs | CNV_calling | map { sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile -> 
-            tuple(sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile, genome_version, file(regions_file))
+        cnv_inputs | CNV_calling | map { sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile -> 
+            tuple(sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile, genome_version, regions_file)
         } | merge_cnv_callers_and_extract_qc
 
     emit:
-        output.out.PennCNV_QC_tsv,
-        output.out.CNVs_tsv
+        merge_cnv_callers_and_extract_qc
 }
 
 
 
 
-workflow TEST {
+workflow {
 
     // Define all the input parameters manually
     list_path_to_BAF_LRR_Probes = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/work/dc/424e5e2256e1e965f0c3a95a91fb15/list_path_to_BAF_LRR_Probes.tsv"
