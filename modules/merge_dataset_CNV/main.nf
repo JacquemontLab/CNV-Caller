@@ -26,6 +26,23 @@ process concatenated_CNVs {
     """
 }
 
+process genomic_region_overlap {
+    tag "genomic_region_overlap"
+    input:
+    tuple path(concatenated_CNVs), path(regions_file), val(genome_version)
+
+    output:
+    path "CNVs_with_genomic_regions_overlap.tsv"  // Output: The concatenated result
+
+    script:
+    """
+    echo "Process Running: genomic_region_overlap"
+    
+    add_regions_overlap.sh "$concatenated_CNVs" "$regions_file" "$genome_version" "CNVs_with_genomic_regions_overlap.tsv"
+    """
+}
+
+
 // Define the second process: concatenate PennCNV QC files
 process concatenated_penncnv_qc {
     tag "concatenated_penncnv_qc"

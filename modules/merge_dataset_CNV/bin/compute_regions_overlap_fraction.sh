@@ -1,19 +1,24 @@
 #!/bin/bash
 
 ###############################################################################
-# Script Name: compute_cnv_overlap_fraction.sh
-# Description: This script processes a CNV file (gzipped or uncompressed) and
-#              intersects it with multiple region-generated BED files to
-#              calculate overlap fractions. The results are stored in a
-#              tab-delimited, gzipped TSV file for downstream analysis.
+# Script Name: compute_cnv_region_overlap_fraction.sh
+# Description: Calculates the fraction of overlap between CNV intervals and
+#              multiple sets of genomic regions (BED files). Outputs a TSV
+#              file with overlap fractions for each region set.
 #
-# Usage: ./compute_regions_overlap_fraction.sh <input_file[.gz]> <regions_to_overlap> <output_file[.gz]>
+# Usage:
+#   ./annotate_cnv_overlap_by_regions.sh <cnv_file[.gz]> <region_list> <output_file[.gz]>
+#
+#   <cnv_file[.gz]>     : CNV input file, gzipped or plain text.
+#                         Must contain columns: SampleID, Chr, Start, End (tab-separated).
+#   <region_list>       : Comma-separated list of region definitions in the form:
+#                         "name1:file1.bed[.gz],name2:file2.bed[.gz],..."
+#                         Each BED file must have: Chr, Start, End.
+#   <output_file[.gz]>  : Output TSV file (gzipped if ending in .gz).
 #
 # Author: Florian Bénitière
 # Date: April 2025
 ###############################################################################
-
-set -euo pipefail
 
 # Check input arguments
 if [ "$#" -ne 3 ]; then
@@ -23,7 +28,7 @@ if [ "$#" -ne 3 ]; then
     echo "Arguments:"
     echo "  <input_file[.gz]>       : The input CNV file (either gzipped or uncompressed)."
     echo "                            Must contain at least the following columns:"
-    echo "                            Chr\tStart\tEnd"
+    echo "                            SampleID\tChr\tStart\tEnd"
     echo "  <regions_to_overlap> : A comma-separated list of regions with corresponding BED files."
     echo "                            Each entry should be in the format 'first_region_name:bed_file,second_region_name:bed_file'."
     echo "                            Each BED file must contain at least the following columns:"
@@ -33,63 +38,15 @@ if [ "$#" -ne 3 ]; then
 fi
 
 
-
-### --------------------- STEP 7: Overlap With Genomes Regions --------------------- ###
-cd ~/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/merge_dataset_CNV/test
-
-genome_version=GRCh37
-regions_file=/home/flben/projects/rrg-jacquese/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/CNV_calling_per_sampleID/resources/Genome_Regions_data.tsv
-
-telomere_db=$(mktemp --suffix=.bed)
-awk -v genome="$genome_version" 'BEGIN {
-    OFS="\t"
-    print "Chr", "Start", "End"
-}
-NR > 1 && $4 == "telomere" && $5 == genome {
-    print $1, $2, $3
-}' "$regions_file" > "$telomere_db"
-
-centromere_db=$(mktemp --suffix=.bed)
-awk -v genome="$genome_version" 'BEGIN {
-    OFS="\t"
-    print "Chr", "Start", "End"
-}
-NR > 1 && $4 == "centromere" && $5 == genome {
-    print $1, $2, $3
-}' "$regions_file" > "$centromere_db"
-
-segmentaldup_db=$(mktemp --suffix=.bed)
-awk -v genome="$genome_version" 'BEGIN {
-    OFS="\t"
-    print "Chr", "Start", "End"
-}
-NR > 1 && $4 == "segmentaldup" && $5 == genome {
-    print $1, $2, $3
-}' "$regions_file" > "$segmentaldup_db"
-
-# Set variable defining sources and files to overlap with
-regions_to_overlap="telomere:$telomere_db,centromere:$centromere_db,segmentaldup:$segmentaldup_db"
-
-cut -f2- "$output" > reduce.tsv
-
-# Compute overlap with original CNV files
-"$SCRIPT_DIR"/compute_regions_overlap_fraction.sh reduce.tsv "$algo_to_overlap" test
-
-
-# Clean up the temporary files
-rm "$bed_PAR" "$telomere_db" "$centromere_db" "$segmentaldup_db"
-
-# Assign input and output from arguments
+# Assign arguments
 input_file="$1"
-input_file=test.tsv
 regions_to_overlap="$2"
 output_file="$3"
 
 
-# Determine whether the input file is gzipped
+# Choose the appropriate decompression command
 if [[ "$input_file" == *.gz ]]; then
     read_cmd="zcat"
-    # Optionally fallback to gunzip -c if zcat not available
     if ! command -v zcat &>/dev/null; then
         read_cmd="gunzip -c"
     fi
@@ -97,44 +54,31 @@ else
     read_cmd="cat"
 fi
 
-# Pre-process CNV coordinates:
-temp_sorted_cnv_bed=$(mktemp)
-temp_cnv_bed=$(mktemp)
-temp_saved_for_merged_cnv_bed=$(mktemp)
+# Create temporary files
+cnv_bed=$(mktemp)
+cnv_annotated=$(mktemp)
 
-# - Combine columns 1 and 2 into a single column comma separated
-# - Sort the data based on columns 1 and 2
-$read_cmd "$input_file" | tail -n +2 | sort -k1,1 -k2,2n > "$temp_sorted_cnv_bed"
+# Save header line
 header_update=$($read_cmd "$input_file" | head -n 1)
-# - Extract the chr, start, and end columns
-cut -f2,3,4 "$temp_sorted_cnv_bed" > "$temp_cnv_bed"
 
-$read_cmd "$input_file" | tail -n +2 | awk 'BEGIN{OFS="\t"}
-{
-    print $2, $3, $4, $1
-}' | sort -k1,1 -k2,2n > "$temp_cnv_bed"
+# --- Format CNV into BED format (Chr, Start, End, SampleID) ---s
+$read_cmd "$input_file" | tail -n +2 | awk 'BEGIN{OFS="\t"}{ print $2, $3, $4, $1}' | sort -k1,1 -k2,2n > "$cnv_bed"
 
-tail -n +2 "$input_file" | awk 'BEGIN{OFS="\t"} {$1=$1","$2; $2=""; print}' - | sort -k1,1 -k2,2n > "$temp_saved_for_merged_cnv_bed"
+# --- Save original CNV data (SampleID,Chr,Start,End...) but format for later pasting ---
+$read_cmd "$input_file" | tail -n +2 | awk 'BEGIN{OFS="\t"} {$1=$1","$2; $2=""; print}' - | sort -k1,1 -k2,2n > "$cnv_annotated"
 
 
-# Loop through the regions and their corresponding BED files
+# --- Process each region set (name:file.bed) ---
 for item in ${regions_to_overlap//,/ }; do
     
     # Extract region name (before the colon)
-    algo=${item%%:*}
+    region=${item%%:*}
     # Extract BED file name (after the colon)
     tsvfile=${item##*:}
 
-    # Process the BED file for the current region:
-    # - Combine columns 1 and 2 into a single column
-    # - Extract columns chr, start, and end
-    # - Sort the data based on columns 1 and 2
-    temp_sorted_algo_bed=$(mktemp)
-
-    # Determine whether the tsvfile file is gzipped
+    # Determine decompression method for region file
     if [[ "$tsvfile" == *.gz ]]; then
         read_cmd="zcat"
-        # Optionally fallback to gunzip -c if zcat not available
         if ! command -v zcat &>/dev/null; then
             read_cmd="gunzip -c"
         fi
@@ -142,43 +86,41 @@ for item in ${regions_to_overlap//,/ }; do
         read_cmd="cat"
     fi
 
-    $read_cmd "$tsvfile" | tail -n +2 | sort -k1,1 -k2,2n > "$temp_sorted_algo_bed"
+    # --- Sort BED file ---
+    region_bed_sorted=$(mktemp)
+    $read_cmd "$tsvfile" | tail -n +2 | sort -k1,1 -k2,2n > "$region_bed_sorted"
     
-    # Use bedtools to find intersections between CNV coordinates and the current region's BED file:
-    # - Perform a "wao" (write all overlaps) intersection
-    # - Merge the results, summing the overlap column
-    temp_non_overlap_bed=$(mktemp)
-    temp_overlap_bed=$(mktemp)
-    bedtools merge -i "$temp_sorted_algo_bed" > "$temp_non_overlap_bed"
-    bedtools intersect -a "$temp_cnv_bed" -b "$temp_non_overlap_bed" -wao > "$temp_overlap_bed"
+    # --- Merge overlapping regions ---
+    merged_region_bed=$(mktemp)
+    bedtools merge -i "$region_bed_sorted" > "$merged_region_bed"
 
+    # --- Intersect CNVs with merged regions, get overlap sizes ---
+    overlap_bed=$(mktemp)
+    bedtools intersect -a "$cnv_bed" -b "$merged_region_bed" -wao > "$overlap_bed"
 
-    temp_sorted_cnv_bed=$(mktemp)
-    awk 'BEGIN{OFS="\t"} {$1=$4","$1; $4=""; print}' "$temp_overlap_bed" | sort -k1,1 -k2,2n | bedtools merge -i - -c 8 -o sum > "$temp_sorted_cnv_bed"
+    # --- Sum overlaps per CNV, calculate overlap fraction ---
+    overlap_summary=$(mktemp)
+    awk 'BEGIN{OFS="\t"} {$1=$4","$1; $4=""; print}' "$overlap_bed" | sort -k1,1 -k2,2n | bedtools merge -i - -c 8 -o sum > "$overlap_summary"
 
-    # Calculate the fraction of overlap and append this information:
-    # - Calculate the size of the interval (difference between start and end positions)
-    # - Calculate the overlap as a fraction of the size
+    # Merge overlapping intervals and compute fraction
     temp_frac_overlap_bed=$(mktemp)
     awk -F'\t' 'BEGIN{OFS="\t"} {
             size = $3 - $2;
             overlap = $NF;
             frac = overlap / size ;
             print $0, frac
-        }' "$temp_sorted_cnv_bed" > "$temp_frac_overlap_bed"
+        }' "$overlap_summary" > "$temp_frac_overlap_bed"
 
-    # Merge the CNV coordinates with the calculated overlap fraction
-    temp_tmp_merging_algo_bed=$(mktemp)
-    paste "$temp_sorted_cnv_bed" <(cut -f5 "$temp_frac_overlap_bed") > "$temp_tmp_merging_algo_bed"
+    # --- Append the fraction to the original CNV data ---
+    updated_cnv_annotated=$(mktemp)
+    paste "$cnv_annotated" <(cut -f5 "$temp_frac_overlap_bed") > "$updated_cnv_annotated"
+    mv "$updated_cnv_annotated" "$cnv_annotated"
 
-    # Update the main result file with the merged data
-    mv "$temp_tmp_merging_algo_bed" "$temp_sorted_cnv_bed"
+    # Update header
+    header_update="$header_update\t${region}_Overlap"
 
-    # Append the region name (with tab separation) to the header string
-    header_update="$header_update\t${algo}_Overlap"
-
-    # Clean up temporary files created during this iteration
-    rm -f "$temp_sorted_algo_bed" "$temp_overlap_bed" "$temp_frac_overlap_bed" "$temp_non_overlap_bed"
+    # Clean up per-region temp files
+    rm -f "$region_bed_sorted" "$merged_region_bed" "$overlap_bed" "$overlap_summary"
 done
 
 # Update the final output with the new header and the results
@@ -186,7 +128,7 @@ done
 # - Merge the CNV data with the newly calculated overlap fractions
 final_output=$(mktemp)
 ( echo -e "$header_update" && \
-cat "$temp_sorted_cnv_bed" ) | {
+awk -F'\t' 'BEGIN{OFS="\t"} {split($1, arr, ","); $1=arr[1]; $2=arr[2]; print $0}' "$cnv_annotated" ) | {
     if [[ "$output_file" == *.gz ]]; then
         gzip > "$final_output"
     else
@@ -195,3 +137,6 @@ cat "$temp_sorted_cnv_bed" ) | {
 }
 
 mv "$final_output" "$output_file"
+
+# --- Clean up general temporary files ---
+rm -f "$cnv_bed" "$cnv_annotated"

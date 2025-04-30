@@ -7,8 +7,6 @@
 # Usage: ./script.sh <input_directory> <output_file>
 # Example: ./script.sh pcnv_log QC_per_IID.tsv
 
-set -euo pipefail
-
 # Ensure correct number of arguments
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <input_directory> <output_file>"
