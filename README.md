@@ -2,12 +2,11 @@
 ](https://github.com/JacquemontLab/CNV-Annotation-pipeline)
 
 # Documentation of the CNV Calling and Annotation Pipeline
+This repository contains a bioinformatics pipeline for the discovery and annotation of copy number variants (CNVs).
+The workflow is implemented using Nextflow to ensure reproducibility and efficient execution.
 
-This repository contains a bioinformatics pipeline for discovering and annotating (CNVs).
-The workflow is implemented with Nextflow to ensure reproducibility and efficient execution.
-
-## Different Steps of the Pipeline or structured by modules
-This repository provides a Nextflow-based workflow for identifying and annotating CNVs on human references genome version **GRCh37** or **GRCh38**.
+## Pipeline Overview
+This repository provides a Nextflow-based workflow for identifying and annotating CNVs on human the **GRCh37** or **GRCh38** human reference genome.
 
 ### Workflow DAG
 Below is a graphical representation of the workflow:
@@ -16,8 +15,8 @@ Below is a graphical representation of the workflow:
 
 
 ### Prerequisite to run the Snakefile pipeline:
-Preparing the PLINK files (.bim, .fam, .bed)
-Having the Signal intensity files per SampleID stored in a directory such as named {SampleID}.BAF_LRR_Probes.tsv
+PLINK files: .bim, .fam, and .bed
+Signal intensity files for each sample, named {SampleID}.BAF_LRR_Probes.tsv, with the following format:
 Name\tChr\tPosition\t{SampleID}.Log R Ratio\t{SampleID}.B Allele Freq
 
 
@@ -40,10 +39,10 @@ We used the VEP docker: ensembl-vep : 113.0
 
 ## Current Limitations of the pipeline
 
-- For PennCNV default files are used such as hmm profile **hhall.hmm** available on the git.
+- For PennCNV, default files such as **hhall.hmm** are used (available in the Git repository):
 [Git PennCNV](https://github.com/WGLab/PennCNV)
 
-- For QuantiSNP default files are used such as **levels.dat** and **params.dat** available on the git.
+- For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Git repository):
 [Git QuantiSNP](https://github.com/cwcyau/quantisnp)
 
 - Resource requirements of each step must be adjusted depending on the quantity of data analyzed.
