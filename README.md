@@ -1,5 +1,5 @@
 [Git Repository SNV-Annotation-SPARK
-](https://github.com/JacquemontLab/SNV-Annotation-SPARK.git)
+](https://github.com/JacquemontLab/CNV-Annotation-pipeline)
 
 # Documentation of the CNV Calling and Annotation Pipeline
 
