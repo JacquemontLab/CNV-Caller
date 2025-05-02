@@ -11,3 +11,6 @@
 report-*.html
 trace-*.txt
 # ------------------------------------------------------------------------------
+
+#Ignore testing data and resources at top level
+test_data/

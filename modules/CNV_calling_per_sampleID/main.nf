@@ -11,16 +11,22 @@ nextflow.enable.dsl=2
 // NXF_OFFLINE=true nextflow run main.nf -resume
 
 // Define the process to run CNV calling
-process CNV_calling {
+process call_CNV {
     tag "CNV_calling: ${sample_id}"
 
     input:
-    tuple val(sample_id), path(BAF_LRR_Probes), path(pfb_file), path(gcmodel_file), path(from_plink_extracted_data), path(gcdir)
+    //val sample_id
+    path BAF_LRR_Probes
+    path pfb_file
+    path gcmodel_file
+    path from_plink_extracted_data
+    path gcdir
 
     output:
     tuple val(sample_id), path(BAF_LRR_Probes), path("${sample_id}.quantisnp.cnv"), path("${sample_id}.penncnv.cnv"), path("${sample_id}.penncnv.log")
-
+    
     script:
+    sample_id = BAF_LRR_Probes.getSimpleName()
     """
     # Default parameters can be set here
     chr="1:23"
@@ -98,7 +104,9 @@ process merge_cnv_callers_and_extract_qc {
     tag "merge_cnv_callers_and_extract_qc: ${sample_id}"
 
     input:
-    tuple val(sample_id), file(BAF_LRR_Probes), file(quantisnp_file), file(penncnv_file), file(penncnv_logfile), val(genome_version), file(regions_file)
+    tuple val(sample_id), file(BAF_LRR_Probes), file(quantisnp_file), file(penncnv_file), file(penncnv_logfile)
+    path regions_file
+    val genome_version
 
     output:
     path "${sample_id}.PennCNV_QC.tsv", emit: PennCNV_QC_tsv
@@ -112,39 +120,6 @@ process merge_cnv_callers_and_extract_qc {
 
     extract_qc_penncnv.sh "$penncnv_logfile" ${sample_id}.PennCNV_QC.tsv
     """
-}
-
-
-
-workflow CNV_CALLING {
-    take:
-        cnv_inputs
-        // genome_version
-        // regions_file
-        // sample_inputs
-        // pfb_file
-        // gcmodel_file
-        // from_plink_extracted_data
-        // gcDir
-        // genome_version
-        // regions_file
-
-    main:
-        // Map inputs to full tuple required by CNV_calling
-        // cnv_inputs = sample_inputs
-        //     .map { sample -> 
-        //         tuple(sample[0], sample[1], pfb_file, gcmodel_file, from_plink_extracted_data, gcDir)
-        //     }
-
-
-        // Chain the two processes:
-        cnv_inputs | CNV_calling
-        //  | map { sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile -> 
-        //     tuple(sample_id, BAF_LRR_Probes, quantisnp_file, penncnv_file, penncnv_logfile, genome_version, regions_file)
-        // } | merge_cnv_callers_and_extract_qc
-
-    emit:
-        output = CNV_calling.out
 }
 
 
