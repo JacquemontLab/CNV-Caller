@@ -77,7 +77,7 @@ process identify_1000_best_sampleid {
 process generate_pfb {
     tag "generate_pfb"
 
-    executor "local"
+    //executor "local"
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top 1000 sample files
@@ -90,7 +90,7 @@ process generate_pfb {
     echo "Process Running: generate_pfb"
 
     # Run Perl script to compile the PFB file from selected samples
-    compile_pfb.py "$list_best_BAF_LRR_Probes" 'pfb.tsv' 64
+    compile_pfb.py "$list_best_BAF_LRR_Probes" 'pfb.tsv' ${task.cpus}
     """
 }
 
@@ -113,19 +113,19 @@ process generate_gcmodel {
     echo "Process Running: generate_gcmodel"
 
     # Remove the first line of the input file and create a BED file with specific columns
-    tail -n +2 "$pfb_file" | awk '{print \$2"\t"\$3"\t"\$3"\t"\$1}' > SNP.bed
+    tail -n +2 "$pfb_file" | awk -v OFS="\\t" '{print \$2,\$3,\$3,\$1}' > SNP.bed &&
 
-    # Create the header for the GC model output file
-    echo -e "Name\tChr\tPosition\tGC_percent" > 'gcModel.tsv'
+    # Create the header for the GC model output file 
+    echo -e "Name\\tChr\\tPosition\\tGC_percent" > 'gcModel.tsv' &&
 
     # Intersect SNPs with genomic windows and compute GC content for each SNP position
-    bedtools intersect -a SNP.bed -b "$gc_content_windows" -loj | awk -F"\t" '{print \$4"\t"\$1"\t"\$2"\t"(\$8*100)}' >> 'gcModel.tsv'
+    bedtools intersect -a SNP.bed -b "$gc_content_windows" -loj | awk -v OFS="\\t" '{print \$4,\$1,\$2,(\$8*100)}' >> 'gcModel.tsv'
     """
 }
 
 
 // Workflow definition tying everything together
-workflow PENNCNV_PARAMS {
+workflow PREPARE_PENNCNV_INPUTS {
     take:
         // Define inputs
         directory_BAF_LRR_Probes_by_sample

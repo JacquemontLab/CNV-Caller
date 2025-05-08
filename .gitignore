@@ -14,3 +14,10 @@ trace-*.txt
 
 #Ignore testing data and resources at top level
 test_data/
+
+#Ignore all logs
+*log
+
+
+#Cohort results testing 
+ALSPAC

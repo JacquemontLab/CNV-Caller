@@ -24,7 +24,7 @@ process collect_plink_data {
 }
 
 
-workflow PLINK_EXTRACTED_DATA {
+workflow COLLECT_PLINK_DATA {
     take:
         // Define inputs
         plink_base_path
@@ -47,10 +47,10 @@ workflow PLINK_EXTRACTED_DATA {
         )
 
         // Call the process (or workflow) that uses these inputs
-        from_plink_extracted_data = collect_plink_data(plink_set, probes_file)
+        plink_data = collect_plink_data(plink_set, probes_file)
 
     emit:
-        from_plink_extracted_data
+        plink_data
 }
 
 
