@@ -10,5 +10,5 @@
 
 module load nextflow
 
-nextflow run main.nf -c conf/ccdb.config nextflow.config -with-report -resume
+nextflow run main.nf -c conf/ccdb.config nextflow.config -with-report -with-trace -resume -with-timeline
 

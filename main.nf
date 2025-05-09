@@ -74,7 +74,7 @@ workflow {
                              COLLECT_PLINK_DATA.out,
                              gc_content_windows           )
 
-    test_ch = sample_ch.take( 3 ) //for testing subset
+    test_ch = sample_ch.take( 50 ) //for testing subset
 
 
     '''

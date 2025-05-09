@@ -94,6 +94,23 @@ process generate_pfb {
     """
 }
 
+process generate_duck_pfb {
+    tag "generate_pfb"
+
+    //executor "local"
+
+    input:
+    path list_best_BAF_LRR_Probes    // List of paths to top 1000 sample files
+
+    output:
+    path 'pfb.tsv'      // PFB file (Population Frequency of B Allele)
+
+    script:
+    """
+    compile_pfb_pl.py  ${list_best_BAF_LRR_Probes} pfb.tsv
+    """
+    }
+
 
 // Step 4: Create a GC model file by mapping GC content to SNPs using genomic windows
 process generate_gcmodel {
@@ -143,7 +160,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         )
 
         // Step 3. Generate a PFB file.
-        pfb_file = generate_pfb(
+        pfb_file = generate_duck_pfb(
             identify_1000_best_sampleid.out
         )
 

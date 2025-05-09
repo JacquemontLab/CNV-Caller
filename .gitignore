@@ -10,6 +10,7 @@
 # Ignore report and trace files recursively
 report-*.html
 trace-*.txt
+timeline*.html
 # ------------------------------------------------------------------------------
 
 #Ignore testing data and resources at top level
@@ -21,3 +22,6 @@ test_data/
 
 #Cohort results testing 
 ALSPAC
+
+#Dataspell
+.idea/
