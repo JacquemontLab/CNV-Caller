@@ -61,7 +61,7 @@ NR > 1 {  # Skip the first line (NR is the line number)
     nbprobes += 0
     len += 0
     conf += 0
-    if (nbprobes >= 3 && conf >= 15 && len >= 1000) {
+    if (nbprobes >= 3 && len >= 1000 && conf >= 15) {
         print sample"\t"chr"\t"start"\t"end"\t"copynumber"\t"conf"\t"nbprobes"\t"len"\t"startsnp"\t"endsnp
     }
 }' | {
