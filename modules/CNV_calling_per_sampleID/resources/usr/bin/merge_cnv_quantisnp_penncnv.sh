@@ -98,8 +98,8 @@ trap cleanup EXIT
 ### --------------------- STEP 2: Remove PAR regions --------------------- ###
 
 # Remove CNVs in pseudoautosomal regions on ChrX with Copy_Number = 2 for each algorithm
-"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" "$regions_file" ${genome_version}
-"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_pc" "$pc_clean" "$regions_file" ${genome_version}
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" "$regions_file" "${genome_version}"
+"$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_pc" "$pc_clean" "$regions_file" "${genome_version}"
 
 
 
@@ -114,6 +114,11 @@ trap cleanup EXIT
     sort -k1,1 -k2,2n > "$combined_bed"
 
 # Merge overlapping CNVs using `bedtools merge`, tracking sample info and metrics, Num_Probes_max, Confidence_max etc.
+# Merge overlapping regions in the BED file while aggregating additional columns:
+# - Column 4 (Copy_Number): report all distinct values
+# - Column 5 (Confidence): report the maximum value
+# - Column 6 (Num_Probes): report the maximum value
+# - Column 6 again (Num_Probes): count how many records were merged
 bedtools merge -i "$combined_bed" -c 4,5,6,6 -o distinct,max,max,count > "$merged_bed"
 
 # Add header and split back SampleID and Chr from field 1
@@ -127,6 +132,11 @@ bedtools merge -i "$combined_bed" -c 4,5,6,6 -o distinct,max,max,count > "$merge
 # Extract probe coordinates if not NaN in Log R Ratio column, and sort them
 awk '$4 != "NaN" {print "chr"$2"\t"$3"\t"$3}' "$probe_file" | tail -n +2 | sort -k1,1 -k2,2n > "$probes_bed"
 
+# Report the total number of input probes and number of probes retained after filtering
+original_probe_count=$(wc -l < "$probe_file")
+filtered_probe_count=$(wc -l < "$probes_bed")
+echo "Original probe count: $original_probe_count"
+echo "Filtered BED probe count: $filtered_probe_count"
 
 # Count number of probes overlapping each CNV
 "$SCRIPT_DIR"/count_probes_per_cnv.sh "$merged_tsv" "$probes_correct" "$probes_bed"

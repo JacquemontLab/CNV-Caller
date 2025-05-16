@@ -1,4 +1,4 @@
-#!/usr/bin/env bash 
+#!/bin/bash
     
 #======================================================================
 #Batch parallel CNV caller with cpu managment. Relies on cnv_caling.sh 
