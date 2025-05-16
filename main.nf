@@ -4,18 +4,19 @@ nextflow.enable.dsl=2
 // NXF_OFFLINE=true nextflow run main.nf -resume -c conf/ccdb.config -with-trace -with-report
 
 //import subworkflows
-include { COLLECT_PLINK_DATA } from './modules/extract_data_from_plink'
+include { COLLECT_PLINK_DATA     } from './modules/extract_data_from_plink'
 include { PREPARE_PENNCNV_INPUTS } from './modules/generate_penncnv_params'
+include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
 
 //import processes
-include {call_CNV as CALL_CNVs } from './modules/CNV_calling_per_sampleID'
-include { merge_cnv_callers_and_extract_qc as MERGE_CNV_CALLS } from './modules/CNV_calling_per_sampleID'
+include { mergeCNVCallers as MERGE_CNV_CALLS } from './modules/CNV_calling_per_sampleID'
 
-params.genome_version = "GRCh37"
-params.cohort_tag = "ALSPAC"
-params.outDir = projectDir
-params.plink_dir = file("test_data/plink")
-params.probe_files = file("/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/*tsv")
+//Parameter Definitions 
+params.genome_version = "GRCh37" 
+params.cohort_tag = "ALSPAC"                       // tag to be used when generating summary info and output paths
+params.outDir = projectDir                         // output directory for depositing results
+params.plink_dir = file("test_data/plink")         // plink data directory containing the .bed .bim .fam
+params.probe_files = "test_data/sample_list.txt"   // A txt file where each newline is a filepath to a probe file containing BAF and LRR values   
 
 process buildSummary {
     publishDir params.outDir.resolve(params.cohort_tag)
@@ -49,11 +50,11 @@ process buildSummary {
 workflow {
 
     // Input definitions
-    sample_ch =  Channel.fromPath(params.probe_files)
+    //sample_ch =  Channel.fromPath(params.probe_files)
     plink_dir = file(params.plink_dir)
 
 
-    // resource definitions
+    // resource definitions, these file path constructors can be modified to work off of a bucket or container. 
     resource_dir       =  file(projectDir.resolve("resources"))  //resolve is the prefered method for building paths. ProjectDir points to the main dir. 
     gcDir              =  file(resource_dir / params.genome_version / "GCdir" )
     gc_content_windows =  file(resource_dir / params.genome_version / "gc_content_1k_windows.bed") 
@@ -64,29 +65,30 @@ workflow {
     '''
     PREPARE INPUTS for PennCNV
     '''
-    // Extract the first file from the channel 
-    first_sample = Channel.fromPath(params.probe_files).first() 
+    // Extract the first file from the file 
+    first_sample = Channel.fromPath(file(params.probe_files))
+                                .splitCsv()
+                                .first()
+                                .map { f -> file(f[0].toString())} //convert list of one entry into filepath 
 
     COLLECT_PLINK_DATA     ( plink_dir,
                              first_sample                 )
 
-    PREPARE_PENNCNV_INPUTS ( first_sample.parent,
+    PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
                              COLLECT_PLINK_DATA.out,
                              gc_content_windows           )
-
-    test_ch = sample_ch.take( 50 ) //for testing subset
 
 
     '''
     CALLING CNVs AND MERGE
     '''
-    CALL_CNVs            ( test_ch,
+    CALL_CNV_PARALLEL    ( Channel.fromPath(file(params.probe_files)),
                            PREPARE_PENNCNV_INPUTS.out.pfb_file.first(), //pulling queue channel into value channel using first()
                            PREPARE_PENNCNV_INPUTS.out.gc_model.first(),
                            COLLECT_PLINK_DATA.out.first(),
                            gcDir                                         )
 
-    MERGE_CNV_CALLS      ( CALL_CNVs.out,
+    MERGE_CNV_CALLS      ( CALL_CNV_PARALLEL.out,
                            genomic_regions,
                            params.genome_version                         )
 
@@ -94,14 +96,16 @@ workflow {
     COLLECTING FILES FOR OUTPUT
     '''
 
-    collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv.collectFile(keepHeader : true, 
-                                             storeDir : file(params.outDir / params.cohort_tag / "results"),
-                                             name : "CNVs.tsv")
+    collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv
+                                     .collectFile( keepHeader : true, 
+                                                   storeDir   : file(params.outDir / params.cohort_tag / "results"),
+                                                   name       : "CNVs.tsv")
                                              
 
-    collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv.collectFile(keepHeader : true, 
-                                                   storeDir : file(params.outDir / params.cohort_tag / "results"), 
-                                                   name : "pennCNV_QC.tsv")
+    collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv
+                                    .collectFile( keepHeader : true, 
+                                                  storeDir   : file(params.outDir / params.cohort_tag / "results"), 
+                                                  name       : "pennCNV_QC.tsv")
     '''
     SUMMARY BUILDER
     '''
