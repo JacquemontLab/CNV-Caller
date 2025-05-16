@@ -13,7 +13,7 @@ process collect_plink_data {
     path one_baf_lrr_probes_file // A TSV file with probe IDs in the first column (used for filtering SNPs)
 
     output:
-    path "from_plink_extracted_data.tsv", emit: from_plink_extracted_data  // Final output file with sample ID, call rate, and imputed sex
+    path "from_plink_extracted_data.tsv"
 
     script:
     """
@@ -24,7 +24,7 @@ process collect_plink_data {
 }
 
 
-workflow PLINK_EXTRACTED_DATA {
+workflow COLLECT_PLINK_DATA {
     take:
         // Define inputs
         plink_base_path
@@ -32,25 +32,25 @@ workflow PLINK_EXTRACTED_DATA {
 
     main:
         // Extract the base name (prefix) without directory and extension
-        plink_prefix = plink_base_path.split('/').last()
+        plink_prefix = file("$plink_base_path/*")[0].baseName
 
         // Define the input channel for PLINK dataset prefix and files
         plink_set = Channel.of(
             tuple(
                 plink_prefix,
                 [
-                    file("${plink_base_path}.bed"),
-                    file("${plink_base_path}.bim"),
-                    file("${plink_base_path}.fam")
+                    plink_base_path.resolve("${plink_prefix}.bed"),
+                    plink_base_path.resolve("${plink_prefix}.bim"),
+                    plink_base_path.resolve("${plink_prefix}.fam")
                 ]
             )
         )
 
         // Call the process (or workflow) that uses these inputs
-        from_plink_extracted_data = collect_plink_data(plink_set, probes_file)
+        plink_data = collect_plink_data(plink_set, probes_file)
 
     emit:
-        from_plink_extracted_data
+        plink_data
 }
 
 

@@ -1,77 +1,116 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-// NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
+// NXF_OFFLINE=true nextflow run main.nf -resume -c conf/ccdb.config -with-trace -with-report
 
+//import subworkflows
+include { COLLECT_PLINK_DATA     } from './modules/extract_data_from_plink'
+include { PREPARE_PENNCNV_INPUTS } from './modules/generate_penncnv_params'
+include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
 
-include { PLINK_EXTRACTED_DATA } from './modules/extract_data_from_plink'
-include { PENNCNV_PARAMS } from './modules/generate_penncnv_params'
-include { CNV_CALLING } from './modules/CNV_calling_per_sampleID'
+//import processes
+include { mergeCNVCallers as MERGE_CNV_CALLS } from './modules/CNV_calling_per_sampleID'
 
+//Parameter Definitions 
+params.genome_version = "GRCh37" 
+params.cohort_tag = "ALSPAC"                       // tag to be used when generating summary info and output paths
+params.outDir = projectDir                         // output directory for depositing results
+params.plink_dir = file("test_data/plink")         // plink data directory containing the .bed .bim .fam
+params.probe_files = "test_data/sample_list.txt"   // A txt file where each newline is a filepath to a probe file containing BAF and LRR values   
 
-params.genome_version = "GRCh37"
+process buildSummary {
+    publishDir params.outDir.resolve(params.cohort_tag)
 
-params.gcDir = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/generate_penncnv_params/data/" + params.genome_version + "_GCdir/"
-params.gc_content_windows = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/generate_penncnv_params/data/gc_content_1k_windows_" + params.genome_version + ".bed"
-params.regions_file = "/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/CNV_calling_per_sampleID/data/Genome_Regions_data.tsv"
+    input:
+    val cohort_tag 
+    path cnvs // collected cnvs into one file 
+    path qc   // collected CNV QC reports into one file
 
+    output:
+    path "${cohort_tag}_summary.txt"
+
+    script:
+    """
+     cat <<EOF > ${cohort_tag}_summary.txt
+     CNV_Caller ${cohort_tag} run summary:
+       version: ${workflow.manifest.version}
+       configs: ${workflow.configFiles}
+       workDir: ${workflow.workDir}
+       launch_user: ${workflow.userName}
+       start_time: ${workflow.start}
+       duration: ${workflow.duration}
+    """
+
+    stub:
+    """ 
+    touch summary.txt
+    """
+}
 
 workflow {
-    plink_base_path = "/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/PLINK/ALSPAC"
 
-    def directory_BAF_LRR_Probes_by_sample = "/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/"
-    // def selected_sample_ids = ["ALSPAC09897249"]
-    def selected_sample_ids = ["ALSPAC09897249", "ALSPAC09902309"]
+    // Input definitions
+    //sample_ch =  Channel.fromPath(params.probe_files)
+    plink_dir = file(params.plink_dir)
+
+
+    // resource definitions, these file path constructors can be modified to work off of a bucket or container. 
+    resource_dir       =  file(projectDir.resolve("resources"))  //resolve is the prefered method for building paths. ProjectDir points to the main dir. 
+    gcDir              =  file(resource_dir / params.genome_version / "GCdir" )
+    gc_content_windows =  file(resource_dir / params.genome_version / "gc_content_1k_windows.bed") 
+    genomic_regions    =  file(resource_dir / "Genome_Regions_data.tsv")
+
+
     
-    // Create a channel from the files in the directory
-    Channel
-        .fromPath("${directory_BAF_LRR_Probes_by_sample}/*")
-        .filter { file ->
-            def sampleID = file.getName().split("\\.")[0]
-            sampleID in selected_sample_ids
-        }
-        .map { file ->
-            def sampleID = file.getName().split("\\.")[0]
-            [sampleID, file]
-        }
-        .set { sample_inputs }
+    '''
+    PREPARE INPUTS for PennCNV
+    '''
+    // Extract the first file from the file 
+    first_sample = Channel.fromPath(file(params.probe_files))
+                                .splitCsv()
+                                .first()
+                                .map { f -> file(f[0].toString())} //convert list of one entry into filepath 
 
-    // Extract the first file from the channel
-    sample_inputs
-        .map { sampleID, file -> file }
-        .first()
-        .set { probes_file }
+    COLLECT_PLINK_DATA     ( plink_dir,
+                             first_sample                 )
+
+    PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
+                             COLLECT_PLINK_DATA.out,
+                             gc_content_windows           )
 
 
-    PLINK_EXTRACTED_DATA(
-        plink_base_path,
-        probes_file
-    )
+    '''
+    CALLING CNVs AND MERGE
+    '''
+    CALL_CNV_PARALLEL    ( Channel.fromPath(file(params.probe_files)),
+                           PREPARE_PENNCNV_INPUTS.out.pfb_file.first(), //pulling queue channel into value channel using first()
+                           PREPARE_PENNCNV_INPUTS.out.gc_model.first(),
+                           COLLECT_PLINK_DATA.out.first(),
+                           gcDir                                         )
 
-    PENNCNV_PARAMS(
-        directory_BAF_LRR_Probes_by_sample,
-        PLINK_EXTRACTED_DATA.out,
-        file(params.gc_content_windows)
-    )
+    MERGE_CNV_CALLS      ( CALL_CNV_PARALLEL.out,
+                           genomic_regions,
+                           params.genome_version                         )
 
+    '''
+    COLLECTING FILES FOR OUTPUT
+    '''
 
-    sample_inputs
-        .combine(PENNCNV_PARAMS.out.pfb_file)
-        .combine(PENNCNV_PARAMS.out.gc_model)
-        .combine(PLINK_EXTRACTED_DATA.out.from_plink_extracted_data)
-        .map { it1, gc_model, plink_data ->
-            def (sampleID, file) = it1[0]  // sample_inputs tuple
-            def pfb_file = it1[1]          // pfb_file from first combine
-            tuple(sampleID, file, pfb_file, gc_model, plink_data, file(params.gcDir)) // The tuple of interest
-        }
-        .set { cnv_inputs }
+    collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv
+                                     .collectFile( keepHeader : true, 
+                                                   storeDir   : file(params.outDir / params.cohort_tag / "results"),
+                                                   name       : "CNVs.tsv")
+                                             
 
-    cnv_inputs.view()
-
-
-    CNV_CALLING(
-        cnv_inputs
-    )
+    collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv
+                                    .collectFile( keepHeader : true, 
+                                                  storeDir   : file(params.outDir / params.cohort_tag / "results"), 
+                                                  name       : "pennCNV_QC.tsv")
+    '''
+    SUMMARY BUILDER
+    '''
+                                           
+    buildSummary ( params.cohort_tag, collect_cnv, collect_qc )
 
 }
 
