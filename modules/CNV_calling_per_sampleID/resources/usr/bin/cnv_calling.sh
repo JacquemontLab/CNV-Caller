@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # =============================================================================
 # CNV Analysis Pipeline Wrapper
@@ -46,7 +46,7 @@
 #
 # =============================================================================
 
-
+set -euo pipefail
 
 # Help function
 define_usage() {
@@ -166,3 +166,6 @@ cat ${sample_id}.penncnv.chrx.out ${sample_id}.penncnv.out > ${sample_id}.penncn
 rm ${sample_id}.penncnv.chrx.out ${sample_id}.penncnv.out
 
 rm ${sexfile_temp}
+
+format_quantisnp_cnv.sh "${sample_id}.quantisnp.cnv" "${sample_id}.quantisnp.cnv.tsv"
+format_penncnv_cnv.sh "${sample_id}.penncnv.cnv" "${sample_id}.penncnv.cnv.tsv"

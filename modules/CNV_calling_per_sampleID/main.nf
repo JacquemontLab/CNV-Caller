@@ -14,17 +14,16 @@ nextflow.enable.dsl=2
 process callBatchCNVs {
 
     input:
-    //val sample_id
     val BAF_LRR_Probes
     path pfb_file
     path gcmodel_file
-    path from_plink_extracted_data
+    path sexfile
     path gcdir
 
     output:
-    path "*.penncnv.cnv",   emit: penn_cnv
+    path "*.penncnv.cnv.tsv",   emit: penn_cnv
     path "*.penncnv.log",   emit: penn_log
-    path "*.quantisnp.cnv", emit: quanti_cnv
+    path "*.quantisnp.cnv.tsv", emit: quanti_cnv
     path "batch_list.txt",  emit: batch_list
     
     script:
@@ -33,7 +32,7 @@ process callBatchCNVs {
     echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
 
     batch_cnv_call.sh --batch_list batch_list.txt \
-                      --plink_data ${from_plink_extracted_data} \
+                      --sexfile ${sexfile} \
                       --gcmodel ${gcmodel_file} \
                       --gcdir ${gcdir} \
                       --pfb ${pfb_file}
@@ -79,8 +78,8 @@ workflow  CALL_CNV_PARALLEL {
     main:
 
     //Splitting into groups by splitting csv sample file
-    batch_ch = list_sample_file.splitCsv(by : 64)    //batch size of 64
-                    .take( 3 )            //debug, take first 3 batches
+    batch_ch = list_sample_file.splitCsv(by : 300)    //batch size of 64
+                    .take( 2 )            //debug, take first 3 batches
 
     //Calling CNVs    
     callBatchCNVs ( batch_ch, 
@@ -100,9 +99,11 @@ workflow  CALL_CNV_PARALLEL {
     //building sample-level tuples from batched output via serial joins. Each output 
     //from index() is a tuple(sampleID, filepath) which can be matched with other channels 
     //to create one large tuple.
-     sample_cnvs_ch = sample_paths_ch.join( index(callBatchCNVs.out.quanti_cnv ))
-                                     .join( index(callBatchCNVs.out.penn_cnv   ))
-                                     .join( index(callBatchCNVs.out.penn_log   ))
+    sample_cnvs_ch = sample_paths_ch.join( index(callBatchCNVs.out.quanti_cnv ))
+                                    .join( index(callBatchCNVs.out.penn_cnv   ))
+                                    .join( index(callBatchCNVs.out.penn_log   ))
+                                    
+                                    
     emit:
     sample_cnvs_ch //sample-level cnvs from both cnv callers plus QC files
     

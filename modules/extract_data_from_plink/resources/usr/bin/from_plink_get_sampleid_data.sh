@@ -44,10 +44,10 @@ one_baf_lrr_probes_file="$2"
 output_file="$3"
 
 # Step 1: Filter PLINK file to include only probes listed in `one_baf_lrr_probes_file`
-plink --bfile "$plink_path_prefix" --extract <(cut -f1 "$one_baf_lrr_probes_file" | tail -n +2) --make-bed --out filtered_plink
+#plink --bfile "$plink_path_prefix" --extract <(cut -f1 "$one_baf_lrr_probes_file" | tail -n +2) --make-bed --out filtered_plink
 
 # Step 2: Compute missingness and perform sex check on the filtered PLINK file
-plink --bfile filtered_plink --missing --check-sex --out plink_outputs
+plink --bfile "$plink_path_prefix" --missing --check-sex --out plink_outputs
 
 # Step 3: Process .imiss file to extract sample call rates.
 (echo -e "SampleID\tCall_Rate" && awk 'NR>1 {gsub(/[[:space:]]+/, "\t"); OFS="\t"; print $2"\t"(1-$6)}' plink_outputs.imiss) > plink_outputs.imiss.tsv
@@ -63,7 +63,7 @@ plink --bfile filtered_plink --missing --check-sex --out plink_outputs
 
 # Step 5: Extract family information from the .fam file
 # This part includes the family information such as FID, SampleID, PID, MID, SEX, and PHENOTYPE
-(echo -e "FID\tSampleID\tPID\tMID\tSEX\tPHENOTYPE" && awk '{gsub(/[[:space:]]+/, "\t"); OFS="\t"; print }' filtered_plink.fam) > filtered_plink.family.tsv
+(echo -e "FID\tSampleID\tPID\tMID\tSEX\tPHENOTYPE" && awk '{gsub(/[[:space:]]+/, "\t"); OFS="\t"; print }' "$plink_path_prefix".fam) > filtered_plink.family.tsv
 
 
 # Step 6: Combine sex info, call rate and family information into a final summary TSV

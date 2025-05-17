@@ -12,11 +12,11 @@ include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
 include { mergeCNVCallers as MERGE_CNV_CALLS } from './modules/CNV_calling_per_sampleID'
 
 //Parameter Definitions 
-params.genome_version = "GRCh37" 
-params.cohort_tag = "ALSPAC"                       // tag to be used when generating summary info and output paths
+params.genome_version = "GRCh38" 
+params.cohort_tag = "iWGS_v1.1"                       // tag to be used when generating summary info and output paths
 params.outDir = projectDir                         // output directory for depositing results
-params.plink_dir = file("test_data/plink")         // plink data directory containing the .bed .bim .fam
-params.probe_files = "test_data/sample_list.txt"   // A txt file where each newline is a filepath to a probe file containing BAF and LRR values   
+params.plink_dir = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/SPARK/PLINK")         // plink data directory containing the .bed .bim .fam
+params.probe_files = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/SPARK/list_path_to_BAF_LRR_Probes.tsv"   // A txt file where each newline is a filepath to a probe file containing BAF and LRR values   
 
 process buildSummary {
     publishDir params.outDir.resolve(params.cohort_tag)
@@ -56,9 +56,9 @@ workflow {
 
     // resource definitions, these file path constructors can be modified to work off of a bucket or container. 
     resource_dir       =  file(projectDir.resolve("resources"))  //resolve is the prefered method for building paths. ProjectDir points to the main dir. 
-    gcDir              =  file(resource_dir / params.genome_version / "GCdir" )
-    gc_content_windows =  file(resource_dir / params.genome_version / "gc_content_1k_windows.bed") 
-    genomic_regions    =  file(resource_dir / "Genome_Regions_data.tsv")
+    gcDir              =  file(resource_dir / "GC_correction" / params.genome_version / "GCdir" )
+    gc_content_windows =  file(resource_dir / "GC_correction" / params.genome_version / "gc_content_1k_windows.bed") 
+    genomic_regions    =  file(resource_dir / "Genome_Regions" / "Genome_Regions_data.tsv")
 
 
     
@@ -79,38 +79,38 @@ workflow {
                              gc_content_windows           )
 
 
-    '''
-    CALLING CNVs AND MERGE
-    '''
-    CALL_CNV_PARALLEL    ( Channel.fromPath(file(params.probe_files)),
-                           PREPARE_PENNCNV_INPUTS.out.pfb_file.first(), //pulling queue channel into value channel using first()
-                           PREPARE_PENNCNV_INPUTS.out.gc_model.first(),
-                           COLLECT_PLINK_DATA.out.first(),
-                           gcDir                                         )
+    // '''
+    // CALLING CNVs AND MERGE
+    // '''
+    // CALL_CNV_PARALLEL    ( Channel.fromPath(file(params.probe_files)),
+    //                        PREPARE_PENNCNV_INPUTS.out.pfb_file.first(), //pulling queue channel into value channel using first()
+    //                        PREPARE_PENNCNV_INPUTS.out.gc_model.first(),
+    //                        COLLECT_PLINK_DATA.out.first(),
+    //                        gcDir                                         )
 
-    MERGE_CNV_CALLS      ( CALL_CNV_PARALLEL.out,
-                           genomic_regions,
-                           params.genome_version                         )
+    // MERGE_CNV_CALLS      ( CALL_CNV_PARALLEL.out,
+    //                        genomic_regions,
+    //                        params.genome_version                         )
 
-    '''
-    COLLECTING FILES FOR OUTPUT
-    '''
+    // '''
+    // COLLECTING FILES FOR OUTPUT
+    // '''
 
-    collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv
-                                     .collectFile( keepHeader : true, 
-                                                   storeDir   : file(params.outDir / params.cohort_tag / "results"),
-                                                   name       : "CNVs.tsv")
+    // collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv
+    //                                  .collectFile( keepHeader : true, 
+    //                                                storeDir   : file(params.outDir / params.cohort_tag / "results"),
+    //                                                name       : "CNVs.tsv")
                                              
 
-    collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv
-                                    .collectFile( keepHeader : true, 
-                                                  storeDir   : file(params.outDir / params.cohort_tag / "results"), 
-                                                  name       : "pennCNV_QC.tsv")
-    '''
-    SUMMARY BUILDER
-    '''
+    // collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv
+    //                                 .collectFile( keepHeader : true, 
+    //                                               storeDir   : file(params.outDir / params.cohort_tag / "results"), 
+    //                                               name       : "pennCNV_QC.tsv")
+    // '''
+    // SUMMARY BUILDER
+    // '''
                                            
-    buildSummary ( params.cohort_tag, collect_cnv, collect_qc )
+    // buildSummary ( params.cohort_tag, collect_cnv, collect_qc )
 
 }
 

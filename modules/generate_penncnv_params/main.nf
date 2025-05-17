@@ -107,7 +107,7 @@ process generate_duck_pfb {
 
     script:
     """
-    compile_pfb_pl.py  ${list_best_BAF_LRR_Probes} pfb.tsv
+    compile_pfb_duckdb.py  ${list_best_BAF_LRR_Probes} pfb.tsv 200GB
     """
     }
 

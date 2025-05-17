@@ -1,5 +1,29 @@
 #!/usr/bin/env python
 
+# ------------------------------------------------------------------------------
+# Author: Benjamin Clark
+# Date: 16-05-2025
+# Description: This script processes a list of SNP files, computes the 
+#              PFB (Proportional Frequency of B Allele) for each SNP across 
+#              multiple files.
+#
+# Warning:
+# - This script processes large datasets and may require substantial memory.
+#
+# Input:
+# - listfile: A text file containing a list of paths to SNP signal intensity files (one per line).
+#   Each file should have columns like:
+#     Name    Chr    Position    XXSampleIDXX.Log R Ratio    XXSampleIDXX.B Allele Freq
+#   Example:
+#     rs217682    14    62356724    -0.0639626951149    0.492056429742
+#
+# - output: Path to the output file where results will be saved. If not provided,
+#           the output will be printed to the standard output.
+#
+# Example:
+# python compile_pfb_duckdb.py snp_file_list.txt output_results.tsv memory_limit
+# ------------------------------------------------------------------------------
+
 import polars as pl
 import duckdb
 import sys
@@ -9,9 +33,11 @@ import os
 def main():
     listfile = sys.argv[1]  # First argument: listfile
     output = sys.argv[2]  # Second argument: output file
+    memory_limit = sys.argv[3]  # Third argument: memory limit, example= 32GB
 
-    print(f"Arg1: {listfile}")
-    print(f"Arg2: {output}")
+    print(f"listfile: {listfile}")
+    print(f"output: {output}")
+    print(f"memory_limit: {memory_limit}")
 
     #turning input file into list
     if listfile:
@@ -37,7 +63,7 @@ def main():
     #Execute groupby, taking the average BAF per group of SNPs across samples
     duckdb.sql(
         f"""
-        SET memory_limit = '32GB';
+        SET memory_limit = '{memory_limit}';
         COPY (
             SELECT 
                 Name,
@@ -52,11 +78,6 @@ def main():
 
     #cleanup
     os.remove("compiled_1k.parquet")
-#testing polars implementation, currently uses too much RAM
-# (pl.scan_parquet("compiled_1k.parquet")
-#                 .group_by("Name", "Chr", "Position")
-#                 .agg(PFB = pl.col("BAF").mean())
-#                 .sink_csv(output, separator="\t"))
 
 if __name__ == "__main__":
     main()
