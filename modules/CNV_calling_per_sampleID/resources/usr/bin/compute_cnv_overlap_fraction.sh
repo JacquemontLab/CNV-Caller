@@ -13,7 +13,7 @@
 # Date: April 2025
 ###############################################################################
 
-set -euo pipefail
+# set -euo pipefail
 
 # Check input arguments
 if [ "$#" -ne 3 ]; then
