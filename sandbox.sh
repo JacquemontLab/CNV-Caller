@@ -44,7 +44,7 @@ gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/manifest_tier_v8.tsv
 
 
 
-
+export TMPDIR /home/jupyter/cnv_annotation/tmp/
 
 probe_file="resources/from_pfb_gcModel.tsv"
 regions_file="resources/Genome_Regions_data.tsv"
@@ -62,7 +62,7 @@ num_group=1000
 # sample_list=list_sample.txt
 sample_list=resources/list_sample.txt
 # Split sample list
-split -n l/$num_group "$sample_list" "$output_dir/sample_group_"
+# split -n l/$num_group "$sample_list" "$output_dir/sample_group_"
 
 
 input_file_quantisnp=quantisnp_cnv.tsv
