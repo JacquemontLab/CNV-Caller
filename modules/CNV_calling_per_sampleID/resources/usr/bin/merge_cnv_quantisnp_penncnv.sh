@@ -30,6 +30,10 @@
 #
 ###############################################################################
 
+log_step() {
+    echo -e "\n[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
 set -euo pipefail
 
 # --------------------- Check input arguments --------------------- #
@@ -88,14 +92,15 @@ cleanup() {
 trap cleanup EXIT
 
 ### --------------------- STEP 1: Format QuantiSNP and PennCNV outputs --------------------- ###
+log_step "STEP 1: Format QuantiSNP and PennCNV outputs"
 
-# Format raw QuantiSNP and PennCNV outputs into standardized tabular files
-"$SCRIPT_DIR"/format_quantisnp_cnv.sh "$input_file_quantisnp" "$tmp_qs"
-"$SCRIPT_DIR"/format_penncnv_cnv.sh "$input_file_penncnv" "$tmp_pc"
-
+"$SCRIPT_DIR"/filter_by_score.sh "$input_file_quantisnp" 15 | gzip > "$tmp_qs"
+"$SCRIPT_DIR"/filter_by_score.sh "$input_file_penncnv" 30 | gzip > "$tmp_pc"
 
 
 ### --------------------- STEP 2: Remove PAR regions --------------------- ###
+log_step "STEP 2: Remove PAR regions"
+
 
 # Remove CNVs in pseudoautosomal regions on ChrX with Copy_Number = 2 for each algorithm
 "$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_qs" "$qs_clean" "$regions_file" "${genome_version}"
@@ -104,6 +109,7 @@ trap cleanup EXIT
 
 
 ### --------------------- STEP 3: Merge CNVs from both algorithms --------------------- ###
+log_step "STEP 3: Merge CNVs from both algorithms"
 
 # Combine the formatted PennCNV and QuantiSNP files (excluding headers)
 # Transform SampleID and Chr into one field to preserve both
@@ -128,6 +134,7 @@ bedtools merge -i "$combined_bed" -c 4,5,6,6 -o distinct,max,max,count > "$merge
 
 
 ### --------------------- STEP 4: Correct Probe Count --------------------- ###
+log_step "STEP 4: Correct Probe Count"
 
 # Extract probe coordinates if not NaN in Log R Ratio column, and sort them
 awk '$4 != "NaN" {print "chr"$2"\t"$3"\t"$3}' "$probe_file" | tail -n +2 | sort -k1,1 -k2,2n > "$probes_bed"
@@ -144,6 +151,7 @@ echo "Filtered BED probe count: $filtered_probe_count"
 
 
 ### --------------------- STEP 5: Overlap With Original CNVs --------------------- ###
+log_step "STEP 5: Overlap With Original CNVs"
 
 # Set variable defining sources and files to overlap with
 algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean"
@@ -154,6 +162,7 @@ algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean"
 
 
 ### --------------------- STEP 6: Detect Overlap Between Tools --------------------- ###
+log_step "STEP 6: Detect Overlap Between Tools"
 
 # Create BED file from overlap result with combined SampleID+Chr as first field
 cat "$overlap_raw" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 > "$overlap_raw_sorted"

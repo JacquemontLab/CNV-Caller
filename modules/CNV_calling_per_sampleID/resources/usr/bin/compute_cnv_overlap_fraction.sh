@@ -13,7 +13,7 @@
 # Date: April 2025
 ###############################################################################
 
-# set -euo pipefail
+set -euo pipefail
 
 # Check input arguments
 if [ "$#" -ne 3 ]; then
@@ -57,7 +57,7 @@ temp_cnv_bed=$(mktemp)
 # - Combine columns 1 and 2 into a single column comma separated
 # - Sort the data based on columns 1 and 2
 $read_cmd "$input_file" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | sort -k1,1 -k2,2n > "$temp_sorted_cnv_bed"
-header_update=$($read_cmd "$input_file" | head -n 1)
+header_update="$(echo $($read_cmd "$input_file" | head -n 1))"
 # - Extract the chr, start, and end columns
 cut -f1,3,4 "$temp_sorted_cnv_bed" > "$temp_cnv_bed"
 
