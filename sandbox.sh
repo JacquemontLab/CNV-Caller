@@ -43,8 +43,11 @@ time ./scripts/merge_cnv_quantisnp_penncnv.sh ${input_file_quantisnp} ${input_fi
 gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/manifest_tier_v8.tsv.gz .
 
 
+./scripts/format_penncnv_cnv.sh inputs/merged.pcnv.cnv.gz penncnv_cnv.tsv
+./scripts/format_quantisnp_cnv.sh inputs/merged.quanti.cnv.gz quantisnp_cnv.tsv
 
-export TMPDIR /home/jupyter/cnv_annotation/tmp/
+
+export TMPDIR=/home/jupyter/cnv_annotation/tmp
 
 probe_file="resources/from_pfb_gcModel.tsv"
 regions_file="resources/Genome_Regions_data.tsv"
@@ -62,7 +65,7 @@ num_group=1000
 # sample_list=list_sample.txt
 sample_list=resources/list_sample.txt
 # Split sample list
-# split -n l/$num_group "$sample_list" "$output_dir/sample_group_"
+split -n l/$num_group "$sample_list" "$output_dir/sample_group_"
 
 
 input_file_quantisnp=quantisnp_cnv.tsv
@@ -75,18 +78,18 @@ for group_file in $(find "$output_dir" -name "sample_group_*" | sort); do
 
     echo $current_jobs
     (
-    # head -n 1 "$input_file_quantisnp" > "$output_dir/quantisnp_${group_id}.tsv"
-    # awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_quantisnp" >> "$output_dir/quantisnp_${group_id}.tsv"
+    head -n 1 "$input_file_quantisnp" > "$output_dir/quantisnp_${group_id}.tsv"
+    awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_quantisnp" >> "$output_dir/quantisnp_${group_id}.tsv"
 
-    # head -n 1 "$input_file_quantisnp" > "$output_dir/penncnv_${group_id}.tsv"
-    # awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_penncnv" >> "$output_dir/penncnv_${group_id}.tsv"
+    head -n 1 "$input_file_quantisnp" > "$output_dir/penncnv_${group_id}.tsv"
+    awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_penncnv" >> "$output_dir/penncnv_${group_id}.tsv"
 
     # Run the script
-    time ./scripts/merge_cnv_quantisnp_penncnv.sh \
-        "$output_dir/quantisnp_$group_id.tsv" \
-        "$output_dir/penncnv_$group_id.tsv" \
-        "$probe_file" "$regions_file" "$genome_version" \
-        "$output_dir/output_$group_id.tsv"
+    # time ./scripts/merge_cnv_quantisnp_penncnv.sh \
+    #     "$output_dir/quantisnp_$group_id.tsv" \
+    #     "$output_dir/penncnv_$group_id.tsv" \
+    #     "$probe_file" "$regions_file" "$genome_version" \
+    #     "$output_dir/output_$group_id.tsv"
     ) &
 
   current_jobs=$((current_jobs + 1))
