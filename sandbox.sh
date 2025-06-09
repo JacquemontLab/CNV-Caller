@@ -63,7 +63,7 @@ num_cores=96
 num_group=1000
 
 # sample_list=list_sample.txt
-sample_list=resources/list_sample.txt
+sample_list=list_sampleid.txt
 # Split sample list
 split -n l/$num_group "$sample_list" "$output_dir/sample_group_"
 
