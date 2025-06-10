@@ -17,7 +17,7 @@ gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/from_pfb_gcModel.tsv
 
 
 
-gsutil -m -u $workspace_id cp gs://fc-aou-datasets-controlled/v8/microarray/plink/ .
+gsutil -m -u $workspace_id cp -r gs://fc-aou-datasets-controlled/v8/microarray/plink/ .
 
 
 
@@ -85,11 +85,11 @@ for group_file in $(find "$output_dir" -name "sample_group_*" | sort); do
     awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_penncnv" >> "$output_dir/penncnv_${group_id}.tsv"
 
     # Run the script
-    # time ./scripts/merge_cnv_quantisnp_penncnv.sh \
-    #     "$output_dir/quantisnp_$group_id.tsv" \
-    #     "$output_dir/penncnv_$group_id.tsv" \
-    #     "$probe_file" "$regions_file" "$genome_version" \
-    #     "$output_dir/output_$group_id.tsv"
+    time ./scripts/merge_cnv_quantisnp_penncnv.sh \
+        "$output_dir/quantisnp_$group_id.tsv" \
+        "$output_dir/penncnv_$group_id.tsv" \
+        "$probe_file" "$regions_file" "$genome_version" \
+        "$output_dir/output_$group_id.tsv"
     ) &
 
   current_jobs=$((current_jobs + 1))
@@ -103,6 +103,9 @@ done
 
 # Wait for all remaining jobs
 wait
+
+
+
 
 
 output_dir=out/
@@ -122,12 +125,14 @@ done
 
 
 
-
 awk 'NR==FNR { samples[$1]; next } FNR > 1 && $1 in samples' "$group_file" "$input_file_quantisnp"
 
 
+workspace_id="terra-vpc-sc-bf15287e"
+bucket_id="gs://fc-secure-8bde5181-67bc-4770-96db-3b707c3f187f/"
+gsutil -m -u $workspace_id cat ${bucket_id}output_cnvcalling/penncnv/1090122.pcnv.out.gz | zcat | head
 
-
+gsutil -m -u $workspace_id ls ${bucket_id}
 
 
 
@@ -195,6 +200,7 @@ cp "$frac_bed"              ./frac_overlap.bed
 
 
 
+gsutil -m -u $workspace_id cp test_output.tsv fc-secure-8bde5181-67bc-4770-96db-3b707c3f187f/output_cnvcalling/cnv_annotation/testing/
 
 gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/manifest_tier_v8.tsv.gz .
 
