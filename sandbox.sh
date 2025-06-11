@@ -12,6 +12,22 @@ gsutil -m -u $workspace_id cp -r ${bucket_id}output_cnvcalling/cnv_annotation .
 workspace_id="terra-vpc-sc-bf15287e"
 bucket_id="gs://fc-secure-8bde5181-67bc-4770-96db-3b707c3f187f/"
 
+
+gsutil -m -u $workspace_id cp penncnv_cnv.tsv.gz ${bucket_id}output_cnvcalling/cnv_annotation/inputs/penncnv_cnv.tsv.gz
+gsutil -m -u $workspace_id cp quantisnp_cnv.tsv.gz ${bucket_id}output_cnvcalling/cnv_annotation/inputs/quantisnp_cnv.tsv.gz
+
+
+gsutil -m -u $workspace_id cp ${bucket_id}output_cnvcalling/cnv_annotation/inputs/quantisnp_cnv.tsv.gz .
+gsutil -m -u $workspace_id cp ${bucket_id}output_cnvcalling/cnv_annotation/inputs/penncnv_cnv.tsv.gz .
+
+gsutil -m -u $workspace_id cp child_cnv_penncnv.bed  ${bucket_id}analysis_mp/
+gsutil -m -u $workspace_id cp parents_cnv_penncnv.bed  ${bucket_id}analysis_mp/
+
+
+gsutil -m -u $workspace_id cp ${bucket_id}analysis_mp/child_cnv_penncnv.bed .
+gsutil -m -u $workspace_id cp  ${bucket_id}analysis_mp/parents_cnv_penncnv.bed .
+
+
 gsutil -m -u $workspace_id cp -r gs://fc-aou-datasets-controlled/v8/microarray/plink/ .
 gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/from_pfb_gcModel.tsv.gz resources/
 
