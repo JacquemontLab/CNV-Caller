@@ -37,7 +37,8 @@ df = df.with_columns(
 
 # Reorder columns: insert 'Type' at position 5
 cols = df.columns
-new_order = cols[:4] + ["Type"] + [col for col in cols[4:] if col != "Type"]
+new_order = cols[:4] + ["Type"] + [col for col in cols[4:] if col != "Type" and col != "Confidence_max"]
+
 df = df.select(new_order)
 
 # Save to TSV

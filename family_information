@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Usage: ./plink_split_and_grm.sh N
+# Where N is the number of subsets to create
+
+set -e
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <number_of_subsets>"
+    exit 1
+fi
+
+N=$1
+BFILE="/home/jupyter/plink/arrays_bestcallrate_subset"
+
+echo "Extracting FID and IID..."
+cut -f1,2 ${BFILE}.fam > full_sample_list.txt
+
+echo "Splitting sample list into $N subsets..."
+split -d -n l/$N full_sample_list.txt subset_
+
+# Rename to subset1.txt, subset2.txt, ...
+for i in $(seq -f "%02g" 0 $((N-1))); do
+    mv subset_$i subset$((10#$i + 1)).txt
+done
+
+echo "Computing between-subset GRMs without creating intermediate PLINK files..."
+for i in $(seq 1 $((N-1))); do
+    for j in $(seq $((i+1)) $N); do
+        cat subset${i}.txt subset${j}.txt > keep_${i}_${j}.txt
+
+        echo "Computing GRM for subset pair ${i} and ${j}..."
+        time plink --bfile $BFILE \
+              --keep keep_${i}_${j}.txt \
+              --make-rel \
+              --out rel_${i}_${j}
+    done
+done
+
+
+plink --bfile $BFILE \
+              --keep subset1.txt \
+              --make-bed \
+              --out rel_1

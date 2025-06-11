@@ -15,9 +15,14 @@ bucket_id="gs://fc-secure-8bde5181-67bc-4770-96db-3b707c3f187f/"
 gsutil -m -u $workspace_id cp -r gs://fc-aou-datasets-controlled/v8/microarray/plink/ .
 gsutil -m -u $workspace_id cp ${bucket_id}cnvcalling_inputs/from_pfb_gcModel.tsv.gz resources/
 
+gsutil -m -u $workspace_id cp ${bucket_id}time time
 
 
 gsutil -m -u $workspace_id cp -r gs://fc-aou-datasets-controlled/v8/microarray/plink/ .
+
+
+
+gsutil -m -u $workspace_id ls gs://fc-aou-datasets-controlled/v8/
 
 
 
@@ -37,6 +42,15 @@ output="microarray_cnv.tsv"
 
 
 time ./scripts/merge_cnv_quantisnp_penncnv.sh ${input_file_quantisnp} ${input_file_penncnv} ${probe_file} ${regions_file} ${genome_version} ${output}
+
+
+gsutil -m -u $workspace_id cp from_plink_extracted_data.tsv ${bucket_id}cnvcalling_inputs/manifest_tier_v8.tsv.gz .
+
+
+gsutil -m -u $workspace_id cp from_plink_extracted_data.tsv ${bucket_id}output_cnvcalling/cnv_annotation/inputs/
+
+
+gsutil -m -u $workspace_id cp ${bucket_id}output_cnvcalling/cnv_annotation/inputs/penncnv_qc_score.tsv
 
 
 
@@ -144,7 +158,7 @@ gsutil -m -u $workspace_id ls ${bucket_id}
 
 
 
-  awk "NR==FNR{samples[\$1]; next} \$1 in samples" "$group_file" '"$input_file_penncnv"' > "$output_dir/penncnv_$group_id.txt"
+awk "NR==FNR{samples[\$1]; next} \$1 in samples" "$group_file" '"$input_file_penncnv"' > "$output_dir/penncnv_$group_id.txt"
 
 
 
