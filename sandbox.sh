@@ -1107,6 +1107,20 @@ zcat "$INPUT_DIR"/*.pcnv.log.gz \
 
 
 
+
+workspace_id="terra-vpc-sc-bf15287e"
+bucket_id="gs://fc-secure-8bde5181-67bc-4770-96db-3b707c3f187f/"
+
+
+workspace_id="terra-vpc-sc-bf15287e"
+bucket_id="gs://fc-secure-4b0aef5d-eae5-4794-a548-4146d806e872/"
+
+
+
+gsutil -m -u $workspace_id cp logs/* ${bucket_id}pedigree_inference/logs/
+
+
+
 mkdir penncnv
 gsutil -m -u $workspace_id cp penncnv_qc_score.tsv ${bucket_id}output_cnvcalling/
 gsutil -m -u $workspace_id cp plink_callrate.tsv ${bucket_id}output_cnvcalling/
