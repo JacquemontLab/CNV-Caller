@@ -141,7 +141,6 @@ echo "Running PennCNV on ChrX..."
 # -----------------------------------------------------------------------------
 echo "Running QuantiSNP..."
 export MCR_CACHE_ROOT=$(mktemp -d -t mcr_cache_XXXXXX)
-mkdir -p "$MCR_CACHE_ROOT"
 
 /usr/bin/time -v quantisnp --chr ${chr} \
     --outdir . \
