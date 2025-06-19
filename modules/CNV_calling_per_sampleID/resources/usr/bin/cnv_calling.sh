@@ -140,7 +140,7 @@ echo "Running PennCNV on ChrX..."
 # Step 4: QuantiSNP
 # -----------------------------------------------------------------------------
 echo "Running QuantiSNP..."
-export MCR_CACHE_ROOT="tmp/mcr_cache"
+export MCR_CACHE_ROOT=$(mktemp -d -t mcr_cache_XXXXXX)
 mkdir -p "$MCR_CACHE_ROOT"
 
 /usr/bin/time -v quantisnp --chr ${chr} \
@@ -152,6 +152,8 @@ mkdir -p "$MCR_CACHE_ROOT"
     --gcdir ${gcdir} \
     --input-files ${BAF_LRR_Probes} \
     --doXcorrect --verbose &> ${sample_id}.quantisnp.log
+
+rm -rf "$MCR_CACHE_ROOT"
 
 # -----------------------------------------------------------------------------
 # Step 4: Renaming files
