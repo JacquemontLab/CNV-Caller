@@ -155,7 +155,7 @@ export MCR_CACHE_ROOT=$(mktemp -d -t mcr_cache_XXXXXX)
 rm -rf "$MCR_CACHE_ROOT"
 
 # -----------------------------------------------------------------------------
-# Step 4: Renaming files
+# Step 5: Renaming files
 # -----------------------------------------------------------------------------
 mv ${sample_id}.cnv ${sample_id}.quantisnp.cnv
 mv ${sample_id}.loh ${sample_id}.quantisnp.loh
