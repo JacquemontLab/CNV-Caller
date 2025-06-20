@@ -44,7 +44,7 @@ one_baf_lrr_probes_file="$2"
 output_file="$3"
 
 # Step 1: Filter PLINK file to include only probes listed in `one_baf_lrr_probes_file`
-#plink --bfile "$plink_path_prefix" --extract <(cut -f1 "$one_baf_lrr_probes_file" | tail -n +2) --make-bed --out filtered_plink
+plink --bfile "$plink_path_prefix" --extract <(cut -f1 "$one_baf_lrr_probes_file" | tail -n +2) --make-bed --out filtered_plink
 
 # Step 2: Compute missingness and perform sex check on the filtered PLINK file
 plink --bfile "$plink_path_prefix" --missing --check-sex --out plink_outputs

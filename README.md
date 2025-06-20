@@ -1,7 +1,6 @@
-[Git Repository SNV-Annotation-SPARK
-](https://github.com/JacquemontLab/CNV-Annotation-pipeline)
+[Git Repository CNV-Calling-Microarray](https://github.com/JacquemontLab/CNV-Calling-Microarray)
 
-# Documentation of the CNV Calling and Annotation Pipeline
+# Documentation of the CNV Calling and Annotation Pipeline for Microarray
 This repository contains a bioinformatics pipeline for the discovery and annotation of copy number variants (CNVs).
 The workflow is implemented using Nextflow to ensure reproducibility and efficient execution.
 

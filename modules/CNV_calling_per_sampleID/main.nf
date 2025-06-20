@@ -23,6 +23,7 @@ process callBatchCNVs {
     output:
     path "*.penncnv.cnv.tsv",   emit: penn_cnv
     path "*.penncnv.log",   emit: penn_log
+    path "*.penncnv_qc.tsv", emit: penn_qc
     path "*.quantisnp.cnv.tsv", emit: quanti_cnv
     path "batch_list.txt",  emit: batch_list
     

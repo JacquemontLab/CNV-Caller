@@ -141,6 +141,7 @@ echo "Running PennCNV on ChrX..."
 # -----------------------------------------------------------------------------
 echo "Running QuantiSNP..."
 export MCR_CACHE_ROOT=$(mktemp -d -t mcr_cache_XXXXXX)
+mkdir -p "$MCR_CACHE_ROOT"
 
 /usr/bin/time -v quantisnp --chr ${chr} \
     --outdir . \
@@ -170,3 +171,5 @@ rm ${sexfile_temp}
 
 format_quantisnp_cnv.sh "${sample_id}.quantisnp.cnv" "${sample_id}.quantisnp.cnv.tsv"
 format_penncnv_cnv.sh "${sample_id}.penncnv.cnv" "${sample_id}.penncnv.cnv.tsv"
+
+extract_qc_penncnv.sh "${sample_id}.penncnv.log" "${sample_id}.PennCNV_QC.tsv"
