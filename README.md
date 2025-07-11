@@ -1,3 +1,5 @@
+[![Jacquemont's Lab Header](labheader.png)](https://www.jacquemont-lab.org/)
+
 [Git Repository CNV-Calling-Microarray](https://github.com/JacquemontLab/CNV-Calling-Microarray)
 
 # Documentation of the CNV Calling and Annotation Pipeline for Microarray
