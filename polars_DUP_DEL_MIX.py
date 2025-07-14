@@ -1,7 +1,7 @@
 import polars as pl
 
 # Read the input TSV file
-df = pl.read_csv("microarray_cnv.tsv", separator="\t")
+df = pl.read_csv("annotated_child_cnv_PCNV_QSNP_merged.tsv", separator="\t",infer_schema_length=100000)
 
 # Process the Copy_Number column (parse it as list of int)
 df = df.with_columns(
@@ -37,7 +37,7 @@ df = df.with_columns(
 
 # Reorder columns: insert 'Type' at position 5
 cols = df.columns
-new_order = cols[:4] + ["Type"] + [col for col in cols[4:] if col != "Type" and col != "Confidence_max"]
+new_order = cols[:4] + ["Type"] + [col for col in cols[4:] if col != "Type" ]
 
 df = df.select(new_order)
 
