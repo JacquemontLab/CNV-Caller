@@ -53,6 +53,20 @@ chrX	88395845	92583067	XTR	GRCh37
 chrX	89140845	93328068	XTR	GRCh38
 
 
+## Major Histocompatibility Complex (MHC) region
+From :
+
+GRCh37.p13
+https://www.ncbi.nlm.nih.gov/grc/human/regions/MHC?asm=GRCh37.p13
+
+GRCh38.p14
+https://www.ncbi.nlm.nih.gov/grc/human/regions/MHC?asm=GRCh38.p14
+
+### MHC region coordinates
+chr6	28477797	33448354	MHC	GRCh37
+chr6	28510120	33480577	MHC	GRCh38
+
+
 ## Telomeric and Centromeric regions dataset
 Downloaded on 25/04/2025 from https://genome.ucsc.edu/cgi-bin/hgTables
 
