@@ -1,7 +1,7 @@
 import polars as pl
 
 # Read the input TSV file
-df = pl.read_csv("annotated_child_cnv_PCNV_QSNP_merged.tsv", separator="\t",infer_schema_length=100000)
+df = pl.read_csv("annotated_child_cnv_QSNP_QSNP_merged.tsv", separator="\t",infer_schema_length=1000000)
 
 # Process the Copy_Number column (parse it as list of int)
 df = df.with_columns(
@@ -42,5 +42,5 @@ new_order = cols[:4] + ["Type"] + [col for col in cols[4:] if col != "Type" ]
 df = df.select(new_order)
 
 # Save to TSV
-df.write_csv("penncnv_quantisnp_cnv_merged.tsv", separator="\t")
+df.write_csv("quantisnp_cnv_merged.tsv", separator="\t")
 
