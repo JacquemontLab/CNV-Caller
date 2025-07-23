@@ -158,7 +158,7 @@ bedtools intersect -a <(cut -f1-3 "$qs_bed") -b <(cut -f1-3 "$pc_bed") -wo \
 | awk -F'[\t,]' 'BEGIN {OFS="\t"; print "SampleID", "Chr", "Start", "End"} {print $1, $2, $3, $4}' > "$overlap_bed"
 
 # Set variable defining sources and files to overlap with
-algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean,Two_Algorithm:"$overlap_bed"
+algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean,Two_Algorithm:$overlap_bed"
 
 # Compute overlap with original CNV files
 "$SCRIPT_DIR"/compute_cnv_overlap_fraction.sh "$probes_correct" "$algo_to_overlap" "$overlap_raw"
