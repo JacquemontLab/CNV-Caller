@@ -176,11 +176,11 @@ NR > 1 {  # Skip the first line (NR is the line number)
     len = $4 - $3 + 1
     copynumber = $5
     conf_max = $6
-    nb_probe = $7
+    nb_probe = $9
     nb_cnv_merged = $8
-    quantisnp_overlap = $9
-    penncnv_overlap = $10
-    two_algo_overlap = $11
+    quantisnp_overlap = $10
+    penncnv_overlap = $11
+    two_algo_overlap = $12
     
     print sample"\t"chr"\t"start"\t"end"\t"len"\t"copynumber"\t"conf_max"\t"nb_probe"\t"nb_cnv_merged"\t"quantisnp_overlap"\t"penncnv_overlap"\t"two_algo_overlap
 }' "$overlap_raw" > "$output"
