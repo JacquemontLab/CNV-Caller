@@ -14,8 +14,6 @@
 # Date: April 2025
 ###############################################################################
 
-set -euo pipefail
-
 # Check that at least 2 arguments are provided
 if [ "$#" -lt 2 ]; then
     echo "Error: Incorrect number of arguments."
@@ -54,7 +52,7 @@ else
 fi
 
 # Extract header for later reinsertion
-header_update="$(echo $($read_cmd "$input_file" | head -n 1))"
+header_update=$($read_cmd "$input_file" | head -n 1)
 
 # Create a temporary BED file with PAR regions matching the genome version
 bed_PAR=$(mktemp)
