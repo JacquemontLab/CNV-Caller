@@ -75,19 +75,14 @@ merged_tsv=$(mktemp --suffix=.tsv)
 probes_bed=$(mktemp --suffix=.bed)
 probes_correct=$(mktemp --suffix=.tsv)
 overlap_raw=$(mktemp --suffix=.tsv)
-overlap_raw_sorted=$(mktemp --suffix=.bed)
 qs_bed=$(mktemp --suffix=.bed)
 pc_bed=$(mktemp --suffix=.bed)
 overlap_bed=$(mktemp --suffix=.bed)
-overlap_sum_bed=$(mktemp --suffix=.bed)
-frac_bed=$(mktemp --suffix=.bed)
-frac_only=$(mktemp)
 
 cleanup() {
     rm -f "$tmp_qs" "$tmp_pc" "$qs_clean" "$pc_clean" "$combined_bed" "$merged_bed" \
           "$merged_tsv" "$probes_bed" "$probes_correct" "$overlap_raw" \
-          "$overlap_raw_sorted" "$qs_bed" "$pc_bed" "$overlap_bed" "$overlap_sum_bed" \
-          "$frac_bed" "$frac_only"
+          "$qs_bed" "$pc_bed" "$overlap_bed"
 }
 trap cleanup EXIT
 
@@ -150,41 +145,27 @@ echo "Filtered BED probe count: $filtered_probe_count"
 
 
 
-### --------------------- STEP 5: Overlap With Original CNVs --------------------- ###
-log_step "STEP 5: Overlap With Original CNVs"
+### --------------------- STEP 5: Overlap With Original CNVs and Between Tools --------------------- ###
+log_step "STEP 5: Overlap With Original CNVs and Between Tools"
+
+# Create BED file from overlap result with combined SampleID+Chr as first field
+cat "$qs_clean" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 | sort -k1,1 -k2,2n > "$qs_bed"
+cat "$pc_clean" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 | sort -k1,1 -k2,2n > "$pc_bed"
+
+
+bedtools intersect -a <(cut -f1-3 "$qs_bed") -b <(cut -f1-3 "$pc_bed") -wo \
+| awk '{start=($2 > $5 ? $2 : $5); end=($3 < $6 ? $3 : $6); if (start < end) print $1"\t"start"\t"end}' \
+| awk -F'[\t,]' 'BEGIN {OFS="\t"; print "SampleID", "Chr", "Start", "End"} {print $1, $2, $3, $4}' > "$overlap_bed"
 
 # Set variable defining sources and files to overlap with
-algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean"
+algo_to_overlap="QuantiSNP:$qs_clean,PennCNV:$pc_clean,Two_Algorithm:$overlap_bed"
 
 # Compute overlap with original CNV files
 "$SCRIPT_DIR"/compute_cnv_overlap_fraction.sh "$probes_correct" "$algo_to_overlap" "$overlap_raw"
 
 
-
-### --------------------- STEP 6: Detect Overlap Between Tools --------------------- ###
-log_step "STEP 6: Detect Overlap Between Tools"
-
-# Create BED file from overlap result with combined SampleID+Chr as first field
-cat "$overlap_raw" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 > "$overlap_raw_sorted"
-cat "$qs_clean" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 | sort -k1,1 -k2,2n > "$qs_bed"
-cat "$pc_clean" | awk 'BEGIN{OFS="\t"} NR>1{$1=$1","$2; $2=""; print}' | cut -f1,3,4 | sort -k1,1 -k2,2n > "$pc_bed"
-
-# Intersect raw PennCNV and QuantiSNP CNVs and compute overlap count. Those we obtain Num bp shared by penncnv and quantisnp
-bedtools intersect -a <(cut -f1-3 "$qs_bed") -b <(cut -f1-3 "$pc_bed") -wao | bedtools merge -i - -c 7 -o sum > "$overlap_bed"
-
-# Overlap this with the CNV that have been merged, sum overlaps previously computed, and clean up nulls
-bedtools intersect -a "$overlap_raw_sorted" -b "$overlap_bed" -wao | sed 's/\./0/g' | bedtools merge -i - -c 7 -o sum > "$overlap_sum_bed"
-
-# Compute overlap fraction for each CNV
-awk -F'\t' 'BEGIN{OFS="\t"} {
-        size = $3 - $2;
-        overlap = $NF;
-        frac = overlap / size ;
-        print $0, frac
-    }' "$overlap_sum_bed" > "$frac_bed"
-
-# Merge fractional overlap info with overlap_raw into final output
-paste "$overlap_raw" <(echo -e "Two_Algorithm_Overlap" && cut -f5 "$frac_bed" ) | awk 'BEGIN {
+# Create the Length column and save it in the final output
+awk 'BEGIN {
     print "SampleID\tChr\tStart\tEnd\tLength\tCopy_Number\tConfidence_max\tNum_Probes\tNum_Merged_CNVs\tQuantiSNP_Overlap\tPennCNV_Overlap\tTwo_Algorithm_Overlap"
 }
 NR > 1 {  # Skip the first line (NR is the line number)
@@ -202,5 +183,5 @@ NR > 1 {  # Skip the first line (NR is the line number)
     two_algo_overlap = $12
     
     print sample"\t"chr"\t"start"\t"end"\t"len"\t"copynumber"\t"conf_max"\t"nb_probe"\t"nb_cnv_merged"\t"quantisnp_overlap"\t"penncnv_overlap"\t"two_algo_overlap
-}' > "$output"
+}' "$overlap_raw" > "$output"
 
