@@ -28,12 +28,27 @@ import polars as pl
 import duckdb
 import sys
 import os
-
+import psutil
 
 def main():
-    listfile = sys.argv[1]  # First argument: listfile
-    output = sys.argv[2]  # Second argument: output file
-    memory_limit = sys.argv[3]  # Third argument: memory limit, example= 32GB
+    if len(sys.argv) < 2:
+        print("Usage: python compile_pfb_duckdb.py <listfile> [output] [memory_limit]", file=sys.stderr)
+        sys.exit(1)
+        
+    listfile = sys.argv[1]  # Required: listfile
+    
+    output = sys.argv[2] if len(sys.argv) >= 3 else "pfb.tsv"  # Default output file
+
+    # Handle optional third argument for memory limit
+    if len(sys.argv) >= 4:
+        memory_limit = sys.argv[3]
+    else:
+        # Get 90% of total available system memory in bytes
+        available_mem_bytes = psutil.virtual_memory().available
+        memory_limit_bytes = int(available_mem_bytes * 0.9)
+
+        # Convert to gigabytes and format as a string for DuckDB
+        memory_limit = f"{memory_limit_bytes // (1024**3)}GB"
 
     print(f"listfile: {listfile}")
     print(f"output: {output}")
@@ -50,6 +65,8 @@ def main():
         sys.exit(1)
 
 
+    print(f"Number of input files to process: {len(input_files)}")
+    
     #stream to parquet
     (pl.scan_csv(input_files, separator="\t",
                               has_header=False,
@@ -69,7 +86,7 @@ def main():
                 Name,
                 Chr,
                 Position,
-                ROUND(SUM(BAF) / COUNT(*), 3) AS PFB
+                ROUND(SUM(BAF) / COUNT(BAF), 3) AS PFB
             FROM read_parquet('compiled_1k.parquet')
             GROUP BY Name, Chr, Position
         ) TO '{output}' (FORMAT 'csv', DELIMITER '\t', HEADER)
