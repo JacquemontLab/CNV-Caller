@@ -53,13 +53,13 @@ process denovo_cnv_annotation_type {
     """
 }
 
-process raw_cnv_qc {
-    tag "raw_cnv_qc"
+process unfilter_cnv_qc {
+    tag "unfilter_cnv_qc"
 
     input:
     val dataset_name                      // dataset_name, used in the report
     path input_with_denovo_annotation
-    path raw_cnv_qc_rmd  // <- This is your .Rmd file
+    path unfilter_cnv_qc_rmd  // <- This is your .Rmd file
     val output_name
 
     output:
@@ -68,7 +68,7 @@ process raw_cnv_qc {
     script:
     """
 
-    Rscript -e "rmarkdown::render('$raw_cnv_qc_rmd', params=list(dataset_name='$dataset_name',
+    Rscript -e "rmarkdown::render('$unfilter_cnv_qc_rmd', params=list(dataset_name='$dataset_name',
      dataset='$input_with_denovo_annotation', x_var_list='Confidence,Length,Num_Probes'),
         output_file='$output_name'
         )"
@@ -141,11 +141,11 @@ workflow do_quantisnp_qc {
     trio_file
 
     main:
-    raw_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/bin/cnv_raw_qc_report.Rmd")
+    unfilter_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/bin/cnv_unfilter_qc_report.Rmd")
     quantisnp_denovo = denovo_cnv_annotation_type(quantisnp_cnv, trio_file)
-    quantisnp_raw_cnv_qc = raw_cnv_qc(dataset_name, quantisnp_denovo, raw_cnv_qc_rmd,"quantisnp_raw_cnv_qc.pdf")
+    quantisnp_unfilter_cnv_qc = unfilter_cnv_qc(dataset_name, quantisnp_denovo, unfilter_cnv_qc_rmd,"quantisnp_unfilter_cnv_qc.pdf")
 
-    emit: quantisnp_raw_cnv_qc
+    emit: quantisnp_unfilter_cnv_qc
 }
 
 workflow do_penncnv_qc {
@@ -155,11 +155,11 @@ workflow do_penncnv_qc {
     trio_file
 
     main:
-    raw_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/bin/cnv_raw_qc_report.Rmd")
+    unfilter_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/bin/cnv_unfilter_qc_report.Rmd")
     penncnv_denovo = denovo_cnv_annotation_type(penncnv_cnv, trio_file)
-    penncnv_raw_cnv_qc = raw_cnv_qc(dataset_name, penncnv_denovo, raw_cnv_qc_rmd,"penncnv_raw_cnv_qc.pdf")
+    penncnv_unfilter_cnv_qc = unfilter_cnv_qc(dataset_name, penncnv_denovo, unfilter_cnv_qc_rmd,"penncnv_unfilter_cnv_qc.pdf")
 
-    emit: penncnv_raw_cnv_qc
+    emit: penncnv_unfilter_cnv_qc
 }
 
 
@@ -185,13 +185,13 @@ workflow REPORT_PDF {
 
 
     // Call the sub-workflows
-    penncnv_raw_cnv_qc = do_penncnv_qc("${dataset_name} PennCNV Raw",penncnv_cnv, trio_file)
-    quantisnp_raw_cnv_qc = do_quantisnp_qc("${dataset_name} QuantiSNP Raw",quantisnp_cnv, trio_file)
+    penncnv_unfilter_cnv_qc = do_penncnv_qc("${dataset_name} PennCNV Unfilter",penncnv_cnv, trio_file)
+    quantisnp_unfilter_cnv_qc = do_quantisnp_qc("${dataset_name} QuantiSNP Unfilter",quantisnp_cnv, trio_file)
     merged_cnv_qc = do_merged_cnv_qc("${dataset_name} CNV merged dataset",merged_cnv, trio_file)
 
     emit:
-    penncnv_raw_cnv_qc
-    quantisnp_raw_cnv_qc
+    penncnv_unfilter_cnv_qc
+    quantisnp_unfilter_cnv_qc
     merged_cnv_qc
     sample_qc_report
 }

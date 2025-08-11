@@ -3,9 +3,8 @@
 #======================================================================
 # Batch parallel CNV caller with cpu managment. Relies on cnv_caling.sh 
 #======================================================================
-
 usage() {
-  echo "Usage: $0 --batch_list FILE --sexfile FILE --pfb FILE --gcmodel FILE --gcdir DIR --hmm_file FILE --levels FILE --config FILE [--mode MODE] [--cpus INT]"
+  echo "Usage: $0 --batch_list FILE --sexfile FILE --pfb FILE --gcmodel FILE --gcdir DIR --hmm_file FILE --levels FILE --config FILE --chr CHR [--mode MODE] [--cpus INT]"
   echo ""
   echo "Required options:"
   echo "  --batch_list   FILE    Text file with one file path per line"
@@ -16,6 +15,7 @@ usage() {
   echo "  --hmm_file     FILE    Hidden Markov Model parameters file"
   echo "  --levels       FILE    Levels file for analysis"
   echo "  --config       FILE    Configuration file"
+  echo "  --chr          CHR     Chromosome to analyze (e.g. 1, 2, X)"
   echo ""
   echo "Optional:"
   echo "  --mode         MODE    'taskset' (default) or 'parallel'"
@@ -24,11 +24,10 @@ usage() {
   exit 1
 }
 
-
 # Parse Options
 cpus=""
 mode="taskset"  # default
-# Parse Options
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --batch_list) batch_list="$2"; shift 2 ;;
@@ -39,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --hmm_file) hmm_file="$2"; shift 2 ;;
     --levels) levels="$2"; shift 2 ;;
     --config) config="$2"; shift 2 ;;
+    --chr) chr="$2"; shift 2 ;;
     --mode) mode="$2"; shift 2 ;;
     --cpus) cpus="$2"; shift 2 ;;
     --help) usage ;;
@@ -46,11 +46,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Check required args
-if [[ -z "$batch_list" || -z "$sexfile" || -z "$pfb" || -z "$gcmodel" || -z "$gcdir" || -z "$hmm_file" || -z "$levels" || -z "$config" ]]; then
+# Check required parameters
+if [[ -z "$batch_list" || -z "$sexfile" || -z "$pfb" || -z "$gcmodel" || -z "$gcdir" || -z "$hmm_file" || -z "$levels" || -z "$config" || -z "$chr" ]]; then
   echo "❌ Error: All required options must be specified."
   usage
 fi
+
 
 mode="${mode:-taskset}"
 

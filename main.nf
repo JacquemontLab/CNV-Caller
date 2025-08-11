@@ -96,7 +96,8 @@ process trio_from_plink2samplemetadata {
 workflow {
     main:
     // Define inputs
-    list_path_to_BAF_LRR = params.list_path_to_BAF_LRR
+    list_sample_baflrrpath = params.list_sample_baflrrpath
+    list_baflrr_path = params.list_baflrr_path
     plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
     gc_correction_dir = params.gc_correction_dir
     genome_version = params.genome_version
@@ -106,22 +107,8 @@ workflow {
     '''
     PREPARE INPUTS for PennCNV
     '''
-    // Extract the first file from the file 
-    // first_sample = Channel.fromPath(file(list_path_to_BAF_LRR))
-    //                             .splitCsv()
-    //                             .first() // select first row
-    //                             .map { f -> file(f[0].toString())} // convert its content to a file
-
-    baf_lrr_files = Channel.fromPath(file(list_path_to_BAF_LRR))
-                .splitText()
-                .map { line -> 
-                    def cols = line.split('\t')
-                    cols[1]  // index 1 = second column
-                }
-
-
     // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
-    PREPARE_PENNCNV_INPUTS ( list_path_to_BAF_LRR,
+    PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
                              plink2samplemetadata_tsv,
                              gc_correction_dir,
                              genome_version )
@@ -133,8 +120,7 @@ workflow {
     '''
     CALLING CNVs AND MERGE
     '''
-    // CALL_CNV_PARALLEL    ( Channel.fromPath(file(list_path_to_BAF_LRR)),
-    CALL_CNV_PARALLEL    ( baf_lrr_files,
+    CALL_CNV_PARALLEL    ( Channel.fromPath(list_baflrr_path),
                            PREPARE_PENNCNV_INPUTS.out.pfb_file, 
                            PREPARE_PENNCNV_INPUTS.out.gc_model,
                            sex_file,
@@ -172,7 +158,7 @@ workflow {
                                            
     buildSummary  (dataset_name,
                     genome_version,
-                    REPORT_PDF.out.quantisnp_raw_cnv_qc )
+                    REPORT_PDF.out.quantisnp_unfilter_cnv_qc )
 
 
     publish:
@@ -188,8 +174,8 @@ workflow {
     quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch 
 
 // REPORT
-    penncnv_raw_cnv_qc = REPORT_PDF.out.penncnv_raw_cnv_qc
-    quantisnp_raw_cnv_qc = REPORT_PDF.out.quantisnp_raw_cnv_qc
+    penncnv_unfilter_cnv_qc = REPORT_PDF.out.penncnv_unfilter_cnv_qc
+    quantisnp_unfilter_cnv_qc = REPORT_PDF.out.quantisnp_unfilter_cnv_qc
     merged_cnv_qc = REPORT_PDF.out.merged_cnv_qc
     sample_qc_report = REPORT_PDF.out.sample_qc_report
 
@@ -216,17 +202,17 @@ output {
         mode 'copy'
         path "calls_unfiltered/quantisnp/"
     }
+
     quantisnp_cnv_raw {
         mode 'copy'
         path "calls_unfiltered/quantisnp/"
     }
-
-    quantisnp_raw_cnv_qc {
+    penncnv_unfilter_cnv_qc {
         mode 'copy'
         path "docs/"
     }
 
-    penncnv_raw_cnv_qc {
+    quantisnp_unfilter_cnv_qc {
         mode 'copy'
         path "docs/"
     }

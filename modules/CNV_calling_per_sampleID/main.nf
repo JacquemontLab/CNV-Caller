@@ -43,21 +43,21 @@ process callBatchCNVs {
 
     batch_cnv_call.sh --batch_list batch_list.txt \
                     --sexfile ${sexfile} \
+                    --pfb ${pfb_file} \
                     --gcmodel ${gcmodel_file} \
                     --gcdir \$gcdir \
-                    --pfb ${pfb_file} \
                     --hmm_file \$hmm_file \
                     --levels \$levels \
                     --config \$config \
+                    --chr \$chr \
                     --mode taskset
     """
 }
 
 
-
 workflow  CALL_CNV_PARALLEL {
     take:
-    list_sample_file    //file containing a list of filepaths to probe files. Value Channel
+    list_baflrr_path    //file containing a list of filepaths to probe files. Value Channel
     pfb                 //pfb file generated from prepare_penncnv_params
     gc_content_windows  //gc model from resources
     sexfile             //plink data extracted using extract_plink_data
@@ -67,10 +67,9 @@ workflow  CALL_CNV_PARALLEL {
     main:
 
     //Splitting into groups by splitting csv sample file
-    batch_ch = list_sample_file.splitCsv(by : batch_size)    //batch size
+    batch_ch = list_baflrr_path.splitCsv(by : batch_size)    //batch size
                     // .take( 10 )            //debug, take first 2 batches
-
-
+    
 
     //Calling CNVs    
     callBatchCNVs ( batch_ch, 
