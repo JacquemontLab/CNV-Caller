@@ -141,7 +141,7 @@ fi
 ### --------------------- STEP 2: Pre-filter by length >= 1000 bp and by score (30 for PennCNV and 15 for QuantiSNP) --------------------- ###
 log_step "STEP 2: Pre-filter by length >= 1000 bp and by score (30 for PennCNV and 15 for QuantiSNP)"
 
-"$SCRIPT_DIR"/filter_by_score_and_length.sh "$tmp_format_pc" 15 > "$tmp_filter_pc"
+"$SCRIPT_DIR"/filter_by_score_and_length.sh "$tmp_format_pc" 30 > "$tmp_filter_pc"
 "$SCRIPT_DIR"/filter_by_score_and_length.sh "$tmp_format_qs" 15 > "$tmp_filter_qs"
 
 
