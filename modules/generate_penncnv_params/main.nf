@@ -1,7 +1,6 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-// NXF_OFFLINE=true nextflow run main.nf -resume -c nextflow.config -with-trace -with-report
 
 /*
  * This pipeline processes BAF+LRR probe files from a cohort of individuals
@@ -15,31 +14,29 @@ nextflow.enable.dsl=2
 
 
 // Step 1: Generate a table of sample IDs and paths to BAF+LRR probe files
-process generate_list_of_path_to_BAF_LRR_Probes {
-    tag "generate_list_of_path_to_BAF_LRR_Probes"
+// process generate_list_of_path_to_BAF_LRR_Probes {
+//     tag "generate_list_of_path_to_BAF_LRR_Probes"
 
-    executor "local"
+//     input:
+//     val directory_BAF_LRR_Probes_by_sample  // Input directory containing per-sample BAF+LRR files
 
-    input:
-    val directory_BAF_LRR_Probes_by_sample  // Input directory containing per-sample BAF+LRR files
+//     output:
+//     path "list_path_to_BAF_LRR_Probes.tsv" // TSV file mapping SampleID to full path
 
-    output:
-    path "list_path_to_BAF_LRR_Probes.tsv" // TSV file mapping SampleID to full path
+//     script:
+//     """
+//     echo "Process Running: generate_list_of_path_to_BAF_LRR_Probes"
 
-    script:
-    """
-    echo "Process Running: generate_list_of_path_to_BAF_LRR_Probes"
-
-    # Create header, then find all files in the input directory and extract sample ID from filename
-    (echo -e "SampleID\tPath_to_File_BAF_LRR_Probes" &&
-    find "$directory_BAF_LRR_Probes_by_sample" -type f | awk -F'/' '{
-        OFS = "\t";
-        sampleid = \$NF;
-        sub(/\\.BAF_LRR_Probes\\.tsv/, "", sampleid);
-        print sampleid, \$0;
-    }' ) > list_path_to_BAF_LRR_Probes.tsv
-    """
-}
+//     # Create header, then find all files in the input directory and extract sample ID from filename
+//     (echo -e "SampleID\tPath_to_File_BAF_LRR_Probes" &&
+//     find "$directory_BAF_LRR_Probes_by_sample" -type f -name '*baf_lrr.tsv' | awk -F'/' '{
+//         OFS = "\t";
+//         sampleid = \$NF;
+//         sub(/\\.baf_lrr\\.tsv/, "", sampleid);
+//         print sampleid, \$0;
+//     }' ) > list_path_to_BAF_LRR_Probes.tsv
+//     """
+// }
 
 
 
@@ -48,10 +45,8 @@ process generate_list_of_path_to_BAF_LRR_Probes {
 process identify_1000_best_sampleid {
     tag "identify_1000_best_sampleid"
 
-    executor "local"
-
     input:
-    path from_plink_extracted_data                  // File with sample ID, call rate, and imputed sex
+    path plink2samplemetadata_output                  // File with sample ID, call rate, and imputed sex
     path list_path_to_BAF_LRR_Probes     // TSV file mapping SampleID to full path
 
     output:
@@ -61,8 +56,10 @@ process identify_1000_best_sampleid {
     """
     echo "Process Running: identify_1000_best_sampleid"
  
-    # Extract top 1000 samples by call rate (assumed to be column 3), skipping header
-    tail -n +2 "$from_plink_extracted_data" | sort -k3,3nr | cut -f1 | head -n 1000 > SampleID_list
+    # Extract top 1000 samples by call rate (assumed to be column 2), skipping header
+    tail -n +2 "$plink2samplemetadata_output" | 
+    awk 'NR==FNR { sample[\$1]; next } \$1 in sample' $list_path_to_BAF_LRR_Probes - | 
+    sort -k2,2nr | cut -f1 | head -n 1000 > SampleID_list
     
     # Filter original file list to keep only those 1000 samples
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' SampleID_list $list_path_to_BAF_LRR_Probes | cut -f2 > list_best_BAF_LRR_Probes.txt
@@ -77,8 +74,6 @@ process identify_1000_best_sampleid {
 process generate_pfb {
     tag "generate_pfb"
 
-    //executor "local"
-
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top 1000 sample files
 
@@ -87,29 +82,12 @@ process generate_pfb {
 
     script:
     """
-    echo "Process Running: generate_pfb"
-
-    # Run Perl script to compile the PFB file from selected samples
-    compile_pfb.py "$list_best_BAF_LRR_Probes" 'pfb.tsv' ${task.cpus}
-    """
-}
-
-process generate_duck_pfb {
-    tag "generate_pfb"
-
-    //executor "local"
-
-    input:
-    path list_best_BAF_LRR_Probes    // List of paths to top 1000 sample files
-
-    output:
-    path 'pfb.tsv'      // PFB file (Population Frequency of B Allele)
-
-    script:
-    """
-    compile_pfb_duckdb.py  ${list_best_BAF_LRR_Probes} pfb.tsv 200GB
+    compile_pfb.py  ${list_best_BAF_LRR_Probes} pfb.tsv 200GB
     """
     }
+
+
+
 
 
 // Step 4: Create a GC model file by mapping GC content to SNPs using genomic windows
@@ -145,22 +123,27 @@ process generate_gcmodel {
 workflow PREPARE_PENNCNV_INPUTS {
     take:
         // Define inputs
-        directory_BAF_LRR_Probes_by_sample
-        from_plink_extracted_data
-        gc_content_windows
+        list_path_to_BAF_LRR
+        plink2samplemetadata_output
+        gc_correction_dir
+        genome_version
 
+        
     main:
+        // Construct the gc_content_windows path using string interpolation
+        def gc_content_windows = "${gc_correction_dir}/${genome_version}/gc_content_1k_windows.bed"
+
         // Step 1. Index all BAF+LRR files.
-        path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
+        // path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
 
         // Step 2. Identify the top 1000 samples by call rate.
         identify_1000_best_sampleid(
-            from_plink_extracted_data,
-            path_list
+            plink2samplemetadata_output,
+            list_path_to_BAF_LRR
         )
 
         // Step 3. Generate a PFB file.
-        pfb_file = generate_duck_pfb(
+        pfb_file = generate_pfb(
             identify_1000_best_sampleid.out
         )
 
@@ -171,36 +154,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         )
 
     emit:
-        path_list
+        list_path_to_BAF_LRR
         pfb_file
         gc_model
-}
-
-
-// Workflow definition tying everything together
-workflow {
-    // Input parameters (define in config or command line)
-    directory_BAF_LRR_Probes_by_sample = file("/lustre06/project/6008022/All_user_common_folder/RAW_DATA/Genetic/ALSPAC/BAF_LRR_Probes_by_sample/")
-    from_plink_extracted_data = file("/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/data_from_plink/work/38/c40f4c897d9c2da4f9b98149b81a9a/from_plink_extracted_data.tsv")
-    gc_content_windows = file("/lustre06/project/6008022/flben/cnv_annotation/scripts/workflow/CNV-Annotation-pipeline/modules/penncnv_params/resources/gc_content_1k_windows_GRCh37.bed")
-
-    // Step 1. Index all BAF+LRR files.
-    generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
-
-    // Step 2. Identify the top 1000 samples by call rate.
-    identify_1000_best_sampleid(
-        from_plink_extracted_data,
-        generate_list_of_path_to_BAF_LRR_Probes.out
-    )
-
-    // Step 3. Generate a PFB file.
-    generate_pfb(
-        identify_1000_best_sampleid.out
-    )
-
-    // Step 4. Annotate SNPs with GC content using precomputed genomic windows.
-    generate_gcmodel(
-        gc_content_windows,
-        generate_pfb.out
-    )
 }

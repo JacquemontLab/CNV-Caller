@@ -36,12 +36,12 @@ samtools faidx Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz
 ## output (Chr\tStart\tEnd\tGC):
 ./compute_gc_content_windows.sh <genome_fasta.bgz> gc_content_windows_GRChXXXX.bed 999
 
-./compute_gc_content_windows.sh Homo_sapiens.GRCh37.dna.primary_assembly.fa.bgz gc_content_1k_windows_GRCh37.bed 999
+./compute_gc_content_windows.sh Homo_sapiens.GRCh37.dna.primary_assembly.fa.bgz gc_content_1k_windows.bed 999
 
-./compute_gc_content_windows.sh Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz gc_content_1k_windows_GRCh38.bed 999
+./compute_gc_content_windows.sh Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz gc_content_1k_windows.bed 999
 
 
-## Create GCdir for QuantiSNP input
+## Create GCdir for QuantiSNP input which expect "" instead of NA if GC can't be computed
 ## outputs (Start\tEnd\tGC):
 mkdir -p GRCh37_GCdir
 

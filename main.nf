@@ -1,116 +1,247 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-// NXF_OFFLINE=true nextflow run main.nf -resume -c conf/ccdb.config -with-trace -with-report
+nextflow.preview.output = true
+nextflow.enable.moduleBinaries = true
 
 //import subworkflows
-include { COLLECT_PLINK_DATA     } from './modules/extract_data_from_plink'
 include { PREPARE_PENNCNV_INPUTS } from './modules/generate_penncnv_params'
 include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
+include { MERGE_CNV_CALLS        } from './modules/merge_dataset_CNV'
+include { REPORT_PDF       } from './modules/qc_report_pdf'
 
-//import processes
-include { mergeCNVCallers as MERGE_CNV_CALLS } from './modules/CNV_calling_per_sampleID'
-
-//Parameter Definitions 
-params.genome_version = "GRCh38" 
-params.cohort_tag = "iWGS_v1.1"                       // tag to be used when generating summary info and output paths
-params.outDir = projectDir                         // output directory for depositing results
-params.plink_dir = file("/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/SPARK/PLINK")         // plink data directory containing the .bed .bim .fam
-params.probe_files = "/home/flben/projects/rrg-jacquese/All_user_common_folder/RAW_DATA/Genetic/SPARK/list_path_to_BAF_LRR_Probes.tsv"   // A txt file where each newline is a filepath to a probe file containing BAF and LRR values   
 
 process buildSummary {
-    publishDir params.outDir.resolve(params.cohort_tag)
-
+    tag 'quick'
+    
     input:
-    val cohort_tag 
-    path cnvs // collected cnvs into one file 
-    path qc   // collected CNV QC reports into one file
+    val cohort_tag
+    val genome_version
+    path last_outfile
 
     output:
-    path "${cohort_tag}_summary.txt"
+    path "launch_report.txt"
 
     script:
     """
-     cat <<EOF > ${cohort_tag}_summary.txt
-     CNV_Caller ${cohort_tag} run summary:
+        # Convert workflow start datetime to epoch seconds
+        start_sec=\$(date -d "${workflow.start}" +%s)
+        # Get current time in epoch seconds
+        end_sec=\$(date +%s)
+
+        # Calculate duration in seconds
+        duration=\$(( end_sec - start_sec ))
+
+        # Convert duration to minutes and seconds
+        minutes=\$(( duration / 60 ))
+        seconds=\$(( duration % 60 ))
+
+       cat <<EOF > launch_report.txt
+       Calling Pipeline on ${cohort_tag} run summary:
+       run name: ${workflow.runName}
        version: ${workflow.manifest.version}
        configs: ${workflow.configFiles}
        workDir: ${workflow.workDir}
+       genome_version: ${genome_version}
        launch_user: ${workflow.userName}
        start_time: ${workflow.start}
-       duration: ${workflow.duration}
+       duration: \${minutes} minutes and \${seconds} seconds
+
+       Command:
+       ${workflow.commandLine}
+
+    
     """
 
     stub:
-    """ 
-    touch summary.txt
+    """
+    touch launch_report.txt
     """
 }
 
+
+process sexfile_from_plink2samplemetadata {
+    tag "generate sexfile from plink2samplemetadata"
+
+    input:
+    path plink2samplemetadata_tsv
+
+    output:
+    path 'sexfile.tsv'
+
+    script:
+    """
+    cut -f1,3 ${plink2samplemetadata_tsv} > 'sexfile.tsv'
+    """
+}
+
+
+process trio_from_plink2samplemetadata {
+    tag "generate trio file from plink2samplemetadata"
+
+    input:
+    path plink2samplemetadata_tsv
+
+    output:
+    path 'trio.tsv'
+
+    script:
+    """
+    cut -f1,4,5 ${plink2samplemetadata_tsv} > 'trio.tsv'
+    """
+}
+
+
+
 workflow {
-
-    // Input definitions
-    //sample_ch =  Channel.fromPath(params.probe_files)
-    plink_dir = file(params.plink_dir)
-
-
-    // resource definitions, these file path constructors can be modified to work off of a bucket or container. 
-    resource_dir       =  file(projectDir.resolve("resources"))  //resolve is the prefered method for building paths. ProjectDir points to the main dir. 
-    gcDir              =  file(resource_dir / "GC_correction" / params.genome_version / "GCdir" )
-    gc_content_windows =  file(resource_dir / "GC_correction" / params.genome_version / "gc_content_1k_windows.bed") 
-    genomic_regions    =  file(resource_dir / "Genome_Regions" / "Genome_Regions_data.tsv")
-
-
+    main:
+    // Define inputs
+    list_path_to_BAF_LRR = params.list_path_to_BAF_LRR
+    plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
+    gc_correction_dir = params.gc_correction_dir
+    genome_version = params.genome_version
+    batch_size = params.batch_size
+    dataset_name = params.dataset_name
     
     '''
     PREPARE INPUTS for PennCNV
     '''
     // Extract the first file from the file 
-    first_sample = Channel.fromPath(file(params.probe_files))
-                                .splitCsv()
-                                .first()
-                                .map { f -> file(f[0].toString())} //convert list of one entry into filepath 
+    // first_sample = Channel.fromPath(file(list_path_to_BAF_LRR))
+    //                             .splitCsv()
+    //                             .first() // select first row
+    //                             .map { f -> file(f[0].toString())} // convert its content to a file
 
-    COLLECT_PLINK_DATA     ( plink_dir,
-                             first_sample                 )
+    baf_lrr_files = Channel.fromPath(file(list_path_to_BAF_LRR))
+                .splitText()
+                .map { line -> 
+                    def cols = line.split('\t')
+                    cols[1]  // index 1 = second column
+                }
 
-    PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
-                             COLLECT_PLINK_DATA.out,
-                             gc_content_windows           )
+
+    // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
+    PREPARE_PENNCNV_INPUTS ( list_path_to_BAF_LRR,
+                             plink2samplemetadata_tsv,
+                             gc_correction_dir,
+                             genome_version )
 
 
-    // '''
-    // CALLING CNVs AND MERGE
-    // '''
-    // CALL_CNV_PARALLEL    ( Channel.fromPath(file(params.probe_files)),
-    //                        PREPARE_PENNCNV_INPUTS.out.pfb_file.first(), //pulling queue channel into value channel using first()
-    //                        PREPARE_PENNCNV_INPUTS.out.gc_model.first(),
-    //                        COLLECT_PLINK_DATA.out.first(),
-    //                        gcDir                                         )
+    sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
+    trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
 
-    // MERGE_CNV_CALLS      ( CALL_CNV_PARALLEL.out,
-    //                        genomic_regions,
-    //                        params.genome_version                         )
+    '''
+    CALLING CNVs AND MERGE
+    '''
+    // CALL_CNV_PARALLEL    ( Channel.fromPath(file(list_path_to_BAF_LRR)),
+    CALL_CNV_PARALLEL    ( baf_lrr_files,
+                           PREPARE_PENNCNV_INPUTS.out.pfb_file, 
+                           PREPARE_PENNCNV_INPUTS.out.gc_model,
+                           sex_file,
+                           genome_version,
+                           batch_size )
 
-    // '''
-    // COLLECTING FILES FOR OUTPUT
-    // '''
 
-    // collect_cnv = MERGE_CNV_CALLS.out.CNVs_tsv
-    //                                  .collectFile( keepHeader : true, 
-    //                                                storeDir   : file(params.outDir / params.cohort_tag / "results"),
-    //                                                name       : "CNVs.tsv")
-                                             
+    '''
+    PREFILTERING - MERGING
+    '''
+    MERGE_CNV_CALLS ( CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch,
+                    CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch,
+                    file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
+                    genome_version
+                     )
 
-    // collect_qc = MERGE_CNV_CALLS.out.PennCNV_QC_tsv
-    //                                 .collectFile( keepHeader : true, 
-    //                                               storeDir   : file(params.outDir / params.cohort_tag / "results"), 
-    //                                               name       : "pennCNV_QC.tsv")
-    // '''
-    // SUMMARY BUILDER
-    // '''
+    penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+    penncnv_cnv = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
+    quantisnp_cnv = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
+
+    merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
+
+    REPORT_PDF ( 
+        dataset_name,
+        plink2samplemetadata_tsv,
+        trio_file,
+        penncnv_qc,
+        penncnv_cnv,
+        quantisnp_cnv,
+        merged_cnv)
+
+    '''
+    SUMMARY BUILDER
+    '''
                                            
-    // buildSummary ( params.cohort_tag, collect_cnv, collect_qc )
+    buildSummary  (dataset_name,
+                    genome_version,
+                    REPORT_PDF.out.quantisnp_raw_cnv_qc )
+
+
+    publish:
+
+// MERGED CNV DATASET
+    merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
+
+// Before filter results
+    penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+    penncnv_cnv = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
+    penncnv_cnv_raw = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
+    quantisnp_cnv = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
+    quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch 
+
+// REPORT
+    penncnv_raw_cnv_qc = REPORT_PDF.out.penncnv_raw_cnv_qc
+    quantisnp_raw_cnv_qc = REPORT_PDF.out.quantisnp_raw_cnv_qc
+    merged_cnv_qc = REPORT_PDF.out.merged_cnv_qc
+    sample_qc_report = REPORT_PDF.out.sample_qc_report
 
 }
+
+
+output {
+    merged_cnv {
+        mode 'copy'
+    }
+    penncnv_qc {
+        mode 'copy'
+        path "calls_unfiltered/penncnv/"
+    }
+    penncnv_cnv {
+        mode 'copy'
+        path "calls_unfiltered/penncnv/"
+    }
+    penncnv_cnv_raw {
+        mode 'copy'
+        path "calls_unfiltered/penncnv/"
+    }
+    quantisnp_cnv {
+        mode 'copy'
+        path "calls_unfiltered/quantisnp/"
+    }
+    quantisnp_cnv_raw {
+        mode 'copy'
+        path "calls_unfiltered/quantisnp/"
+    }
+
+    quantisnp_raw_cnv_qc {
+        mode 'copy'
+        path "docs/"
+    }
+
+    penncnv_raw_cnv_qc {
+        mode 'copy'
+        path "docs/"
+    }
+
+    merged_cnv_qc {
+        mode 'copy'
+        path "docs/"
+    }
+
+    sample_qc_report {
+        mode 'copy'
+        path "docs/"
+    }
+
+}
+
+
 

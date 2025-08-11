@@ -8,104 +8,112 @@ nextflow.enable.dsl=2
  * CNV detection on each sample, and organizes the outputs for downstream analysis.
  */
 
-// NXF_OFFLINE=true nextflow run main.nf -resume
 
 // Define the process to run CNV calling
 process callBatchCNVs {
+    label "cnv_calling"
 
     input:
     val BAF_LRR_Probes
     path pfb_file
     path gcmodel_file
     path sexfile
-    path gcdir
-
-    output:
-    path "*.penncnv.cnv.tsv",   emit: penn_cnv
-    path "*.penncnv.log",   emit: penn_log
-    path "*.penncnv_qc.tsv", emit: penn_qc
-    path "*.quantisnp.cnv.tsv", emit: quanti_cnv
-    path "batch_list.txt",  emit: batch_list
-    
-    script:
-    """
-    #turn the nextflow variable into lines of a file
-    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
-
-    batch_cnv_call.sh --batch_list batch_list.txt \
-                      --sexfile ${sexfile} \
-                      --gcmodel ${gcmodel_file} \
-                      --gcdir ${gcdir} \
-                      --pfb ${pfb_file}
-    """
-}
-
-
-// Merge CNV callers results and extract QC metrics
-process mergeCNVCallers {
-    tag "merge_cnv_callers_and_extract_qc: ${sample_id}"
-
-    input:
-    tuple val(sample_id), file(BAF_LRR_Probes), file(quantisnp_file), file(penncnv_file), file(penncnv_logfile)
-    path regions_file
     val genome_version
 
     output:
-    path "${sample_id}.PennCNV_QC.tsv", emit: PennCNV_QC_tsv
-    path "${sample_id}.CNVs.tsv", emit: CNVs_tsv
+    path "*.penncnv.qc",   emit: penncnv_qc_raw
+    path "*.PennCNV_QC.tsv", emit: penncnv_qc
+    path "*.penncnv.cnv",   emit: penncnv_cnv_raw
+    path "*.penncnv.cnv.tsv",   emit: penncnv_cnv
+    path "*.quantisnp.cnv", emit: quantisnp_cnv_raw
+    path "*.quantisnp.cnv.tsv", emit: quantisnp_cnv
+    path "batch_list.txt",  emit: batch_list
 
     script:
     """
-    echo "Process Running: merge_cnv_callers_and_extract_qc for ${sample_id}"
+    # Turn the nextflow variable into lines of a file
+    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
 
-    merge_cnv_quantisnp_penncnv.sh "$quantisnp_file" "$penncnv_file" "$BAF_LRR_Probes" "$regions_file" "$genome_version" ${sample_id}.CNVs.tsv
+    # Default parameters avalable in the docker:
+    chr="1:23"
+    gcdir=/usr/local/QuantiSNP-2.3/GC_correction/${genome_version}/GCdir/
+    hmm_file="/usr/local/PennCNV-1.0.5/lib/hhall.hmm"
+    levels="/usr/local/QuantiSNP-2.3/bin/config/levels.dat"
+    config="/usr/local/QuantiSNP-2.3/bin/config/params.dat"
 
-    extract_qc_penncnv.sh "$penncnv_logfile" ${sample_id}.PennCNV_QC.tsv
+    batch_cnv_call.sh --batch_list batch_list.txt \
+                    --sexfile ${sexfile} \
+                    --gcmodel ${gcmodel_file} \
+                    --gcdir \$gcdir \
+                    --pfb ${pfb_file} \
+                    --hmm_file \$hmm_file \
+                    --levels \$levels \
+                    --config \$config \
+                    --mode taskset
     """
 }
-//Index helper function. This function builds a tuple from a filepath where the first entry is file-prefix and the second is the full filepath.
-def index(file_ch){
-    return file_ch.flatten() | map {f -> tuple(f.getSimpleName(), f)}
-}
+
+
 
 workflow  CALL_CNV_PARALLEL {
     take:
     list_sample_file    //file containing a list of filepaths to probe files. Value Channel
     pfb                 //pfb file generated from prepare_penncnv_params
     gc_content_windows  //gc model from resources
-    plink               //plink data extracted using extract_plink_data
+    sexfile             //plink data extracted using extract_plink_data
     gcDir               //resource directory pointing to per-chromosome 1k binned gc content regions
+    batch_size
 
     main:
 
     //Splitting into groups by splitting csv sample file
-    batch_ch = list_sample_file.splitCsv(by : 300)    //batch size of 64
-                    .take( 2 )            //debug, take first 3 batches
+    batch_ch = list_sample_file.splitCsv(by : batch_size)    //batch size
+                    // .take( 10 )            //debug, take first 2 batches
+
+
 
     //Calling CNVs    
     callBatchCNVs ( batch_ch, 
                     pfb,
                     gc_content_windows,
-                    plink,
+                    sexfile,
                     gcDir               )
 
-    
-    //turning batch sample list into tuple pairs
-    sample_paths_ch = callBatchCNVs.out.batch_list
-                        .splitCsv()
-                        .flatten()
-                        .map { f -> tuple(file(f).getSimpleName(),file(f))}
+    // Collect merged QC outputs
+    penncnv_qc_ch = callBatchCNVs.out.penncnv_qc
+        .flatten()
+        .collectFile(keepHeader: true, 
+                    name: "PennCNV_QC.tsv")
 
-    
-    //building sample-level tuples from batched output via serial joins. Each output 
-    //from index() is a tuple(sampleID, filepath) which can be matched with other channels 
-    //to create one large tuple.
-    sample_cnvs_ch = sample_paths_ch.join( index(callBatchCNVs.out.quanti_cnv ))
-                                    .join( index(callBatchCNVs.out.penn_cnv   ))
-                                    .join( index(callBatchCNVs.out.penn_log   ))
-                                    
-                                    
+    penncnv_cnv_ch = callBatchCNVs.out.penncnv_cnv
+        .flatten()
+        .collectFile( keepHeader : true, 
+                    name       : "Penncnv_CNV.tsv")
+
+    // Collect merged raw PennCNV outputs
+    penncnv_cnv_raw_ch = callBatchCNVs.out.penncnv_cnv_raw
+        .flatten()
+        .collectFile(keepHeader: false, 
+                    name: "PennCNV_raw_calls.cnv")
+
+    // Collect merged QuantiSNP CNV outputs
+    quantisnp_cnv_ch = callBatchCNVs.out.quantisnp_cnv
+        .flatten()
+        .collectFile(keepHeader: true, 
+                    name: "QuantiSNP_CNV.tsv")
+
+    // Collect merged raw QuantiSNP outputs
+    quantisnp_cnv_raw_ch = callBatchCNVs.out.quantisnp_cnv_raw
+        .flatten()
+        .collectFile(keepHeader: true, 
+                    name: "QuantiSNP_raw.cnv")
+
+                    
     emit:
-    sample_cnvs_ch //sample-level cnvs from both cnv callers plus QC files
+        penncnv_qc_ch
+        penncnv_cnv_ch
+        penncnv_cnv_raw_ch
+        quantisnp_cnv_ch
+        quantisnp_cnv_raw_ch
     
 }

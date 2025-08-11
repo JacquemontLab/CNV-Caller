@@ -1,0 +1,143 @@
+---
+title: "QC per SampleID Summary Report"
+author: "Jacquemont Lab"
+output:
+  pdf_document: default
+params:
+  dataset_name: "AllOfUs tierv8"
+  qc_input: qc_sample_data_tierv8_v2.tsv
+---
+<!-- 
+12/06/2025 By Florian Bénitière  
+Write a PDF automatic report based on a QC per sample TSV file containing columns: Sexe, Call_Rate, LRR_SD, BAF_SD, WF 
+
+Rscript -e "rmarkdown::render('sample_qc_report.Rmd', params=list(
+    dataset_name='$dataset_name',
+    qc_input='$qc_input'),
+output_file='SPARK_PennCNV_raw_QC.pdf'
+)"
+-->
+
+# **Dataset:** `r params$dataset_name`  
+# **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(ggplot2)
+library(RColorBrewer)
+library(dplyr)
+set_color <- brewer.pal(8, 'Paired')
+set_color <- append(set_color, c("#fdfd99", "#e2cc1a"))
+```
+
+## Sample Count by Sex
+
+```{r sex-count}
+qc_df <- read.delim(params$qc_input, stringsAsFactors = FALSE,
+  header = TRUE,
+  sep = "\t",
+  comment.char = "#")
+
+# Calculate pass/fail logical columns for each metric
+qc_df <- qc_df %>%
+  mutate(
+    pass_Call_Rate = Call_Rate > 0.98,
+    pass_LRR_SD = LRR_SD < 0.35,
+    pass_BAF_SD = BAF_SD < 0.08,
+    pass_WF = WF > -0.05 & WF < 0.05,
+    pass_all = pass_Call_Rate & pass_LRR_SD & pass_BAF_SD & pass_WF
+  )
+
+# Count fails per metric (to print below plots)
+fail_counts <- qc_df %>%
+  summarise(
+    total_samples = n(),
+    fail_Call_Rate = sum(!pass_Call_Rate),
+    fail_LRR_SD = sum(!pass_LRR_SD),
+    fail_BAF_SD = sum(!pass_BAF_SD),
+    fail_WF = sum(!pass_WF),
+    pass_all = sum(pass_all)
+  )
+
+sex_summary <- qc_df %>%
+  count(Sexe) %>%
+  rename(Sex = Sexe, Count = n)
+
+knitr::kable(sex_summary, caption = "Number of Samples by Sex")
+```
+
+## Call Rate Distribution
+
+```{r Call_Rate-plot, fig.width=5, fig.height=3}
+ggplot(qc_df, aes(y = Call_Rate, x = "")) +
+  geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
+  theme_bw() + ylab("Call Rate") + xlab("") +
+  geom_hline(yintercept = 0.98, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.985, label = "Recommended Threshold: >0.98", color = "#E31A1C", size = 3, hjust = -0.08) +
+  theme(
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16)
+  )
+
+cat(sprintf("Number of samples NOT passing Call Rate threshold (>0.98): %d\n", fail_counts$fail_Call_Rate))
+
+```
+
+## LRR_SD Distribution
+
+```{r lrrsd-plot, fig.width=5, fig.height=3}
+ggplot(qc_df, aes(y = LRR_SD, x = "")) +
+  geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
+  theme_bw() + ylab("Log R Ratio SD") + xlab("") +
+  geom_hline(yintercept = 0.35, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.4, label = "Recommended Threshold: <0.35", color = "#E31A1C", size = 3, hjust = -0.08) +
+  theme(
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16)
+  ) + coord_cartesian(ylim = c(0, NA))
+
+cat(sprintf("Number of samples NOT passing LRR_SD threshold (<0.35): %d\n", fail_counts$fail_LRR_SD))
+
+```
+
+## BAF_SD Distribution
+
+```{r bafsd-plot, fig.width=5, fig.height=3}
+ggplot(qc_df, aes(y = BAF_SD, x = "")) +
+  geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
+  theme_bw() + ylab("B Allele Frequency SD") + xlab("") +
+  geom_hline(yintercept = 0.08, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.09, label = "Recommended Threshold: <0.08", color = "#E31A1C", size = 3, hjust = -0.08) +
+  theme(
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16)
+  )+ coord_cartesian(ylim = c(0, NA))
+
+cat(sprintf("Number of samples NOT passing BAF_SD threshold (<0.08): %d\n", fail_counts$fail_BAF_SD))
+
+```
+
+## WF (Wave Factor) Distribution
+
+```{r wf-plot, fig.width=5, fig.height=3}
+ggplot(qc_df, aes(y = WF, x = "")) +
+  geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
+  theme_bw() + ylab("Wave Factor") + xlab("") +
+  geom_hline(yintercept = 0.05, color = "#E31A1C", linetype = "dashed", size = 1) +
+  geom_hline(yintercept = -0.05, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.06, label = "Recommended Threshold: <0.05", color = "#E31A1C", size = 3, hjust = -0.08) +
+  annotate("text", x = 1, y = -0.06, label = "Recommended Threshold: >-0.05", color = "#E31A1C", size = 3, hjust = -0.06) +
+  theme(
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16)
+  )
+
+cat(sprintf("Number of samples NOT passing WF threshold (between -0.05 and 0.05): %d\n", fail_counts$fail_WF))
+
+```
+
+
+
+```{r pass_treshold}
+knitr::kable(fail_counts, caption = "Summary of Samples Failing QC Thresholds")
+```

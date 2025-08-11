@@ -1,0 +1,33 @@
+FROM fedora:42
+
+# Copy application files
+COPY QuantiSNP-2.3/ /usr/local/QuantiSNP-2.3/
+COPY PennCNV-1.0.5/ /usr/local/PennCNV-1.0.5/
+
+COPY quantisnp.sh /usr/local/bin/quantisnp
+COPY penncnv.sh /usr/local/bin/penncnv
+
+
+COPY timedev /usr/local/bin/
+COPY *.sh /usr/local/bin/
+
+# Install required system packages
+RUN dnf install -y --setopt=tsflags=nodocs \
+    python3 python3-pip python3-devel perl parallel autoconf automake \
+    zlib-ng-compat-devel bzip2-devel xz-devel ncurses-compat-libs \
+    libXext libXt libXpm gawk java-latest-openjdk execstack && \
+    dnf clean all
+
+# Install required tools: procps (for `ps`)
+RUN dnf install -y procps-ng
+
+# Unset the executable stack bit on MATLAB MCR shared libraries
+RUN execstack -c /usr/local/QuantiSNP-2.3/MCR/bin/glnxa64/*.so || true
+
+# Make sure it is executable
+RUN chmod +x /usr/local/bin/*
+
+# Set required environment variables
+ENV PERL5LIB=/usr/local/PennCNV-1.0.5/kext:/usr/local/PennCNV-1.0.5/kext/5.40.0/x86_64-linux-thread-multi \
+    PATH="/usr/local/bin:$PATH"
+

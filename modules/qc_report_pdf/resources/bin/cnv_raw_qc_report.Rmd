@@ -1,0 +1,239 @@
+---
+title: "CNV Mendelian Precision Report"
+author: "Jacquemont Lab"
+output:
+  pdf_document: default
+params:
+  dataset_name: "unknow"
+  dataset: "annotated_child_cnv_penncnv.tsv"  # change this to your dataset ID or pass it when knitting
+  x_var_list: "Confidence"
+---
+<!-- 
+Report generated on `r format(Sys.Date(), '%d/%m/%Y')`  
+By Florian Bénitière, Jacquemont Lab  
+
+This report provides an automatic QC summary for CNV data per sample,  
+including Mendelian precision estimates at two reciprocal overlap thresholds (0.1 and 0.5),  
+CNV length distributions, and copy number state summaries.
+
+Input file should be a TSV with columns including: SampleID, Length, Type, Num_Probes, Observed_in_Parent_0.5, and the Confidence.
+
+Rscript -e "rmarkdown::render('cnv_raw_qc_report.Rmd', params=list(dataset_name='SPARK_PennCNV_raw', dataset='/home/flben/links/projects/rrg-jacquese/flben/Mendelian_precision/data/processed/trioinfered_PC_SPARK.tsv', x_var_list='Confidence,Length,Num_Probes'),
+output_file='SPARK_PennCNV_raw_QC.pdf'
+)"
+
+-->
+
+# **Dataset:** `r params$dataset_name`  
+# **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
+
+```{r setup, echo=FALSE, include=FALSE}
+library(ggplot2)
+library(patchwork)  # for arranging plots
+library(viridis)
+library(dplyr)
+library(scales)  # for label_number
+```
+
+```{r extract , echo=FALSE, include=FALSE}
+# Load your CNV data file here (change path and parameters accordingly)
+child_cnv <- read.delim(params$dataset, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+# child_cnv <- read.delim("~/All_user_common_folder/STUDY_DIRECTORY/Mendelian_precision/data/processed/trioinfered_PC_SPARK.tsv", stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+if (!is.logical(child_cnv$Observed_in_Parent_0.5)) {
+  child_cnv$Observed_in_Parent_0.5 <- tolower(child_cnv$Observed_in_Parent_0.5) == "true"
+}
+child_cnv$SampleID = as.character(child_cnv$SampleID)
+
+x_var_list = strsplit(params$x_var_list,",")[[1]]
+```
+
+# **Number of Trios or Children analyzed:** `r length(unique(child_cnv$SampleID))`
+
+## CNV Length Distribution Across Samples
+
+```{r, echo=FALSE, fig.width=7, fig.height=3}
+
+ggplot(child_cnv[child_cnv$Type %in% c("DUP","DEL"),], aes(x = Length, fill = Type)) +   # map fill to Type
+  geom_histogram(binwidth = 0.1, color = "white", position = "dodge") +  # stacked bars by default
+  labs(x = "CNV Length (bp)", y = "Count") +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14)
+  ) +
+  annotation_logticks(sides = "bp") +
+  scale_x_log10(labels = label_number(scale_cut = cut_si("bp"))) +
+  scale_fill_manual(values = c("steelblue", "tomato"))  # manually set two colors
+
+summary_stats <- summary(child_cnv$Length)
+print(summary_stats)
+
+```
+
+## Distribution of CNVs by Copy Number State
+
+```{r summary_cn, echo=FALSE}
+summary_stats <- table(child_cnv$Copy_Number)
+print(summary_stats)
+
+```
+
+## Summary of CNV Counts per Individual
+
+```{r summary_count, echo=FALSE}
+
+# Count number of rows per SampleID
+counts_per_sample <- child_cnv %>%
+  group_by(SampleID) %>%
+  summarise(count = n())
+
+summary_stats <- summary(counts_per_sample$count)
+print(summary_stats)
+
+```
+
+```{r bin_length, echo=FALSE}
+# Create bins for Length (number of bins depends on data size)
+breaks <- c(0, 1e3, 1e4, 1e5, 1e6, Inf)
+labels <- c("0–1 kb", "1–10 kb", "10–100 kb", "100 kb–1 Mb", ">1 Mb")
+
+child_cnv <- child_cnv %>% mutate(length_bin = cut(Length, breaks = breaks, labels = labels, include.lowest = TRUE))
+```
+
+\newpage
+
+## Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
+*Note: bins with fewer than 1000 CNVs were excluded from the analysis.*
+
+\vspace{1cm}
+
+```{r , echo=FALSE, fig.width=11, fig.height=13}
+suppressWarnings({
+  
+  plot_list <- list()
+  length_bin_levels <- levels(factor(child_cnv$length_bin))  # capture current levels
+  # Create a color vector with length equal to number of levels, colorblind-friendly with viridis
+  fixed_colors <- viridis::viridis(length(length_bin_levels), option = "D")
+  names(fixed_colors) <- length_bin_levels
+  
+  number_unique_length_bin = c()
+  
+  for (variable_x in x_var_list) {
+    for (type in c("DEL", "DUP")) {
+      
+      data_set = child_cnv[child_cnv$Type == type, ]
+      
+      var_sym <- sym(variable_x)  # convert string to symbol
+      
+      min_bin_size <- 1000
+      max_bins <- 20
+      
+      data_set <- data_set %>%
+        group_by(length_bin) %>%
+        mutate(
+          n_in_group = n(),
+          possible_bins = floor(n_in_group[1] / min_bin_size),
+          n_bins = max(1, min(possible_bins, max_bins)),
+          breaks_nb = list(unique(quantile(
+            !!var_sym,
+            probs = seq(0, 1, length.out = n_bins[1] + 1),
+            na.rm = TRUE
+          )))
+        ) %>%
+        mutate(
+          score_bin = if(length(breaks_nb[[1]]) > 1) {
+            cut(!!var_sym, breaks = breaks_nb[[1]], include.lowest = TRUE)
+          } else {
+            # Create a factor with all rows assigned to a single bin named after the min value
+            min_val <- min(!!var_sym, na.rm = TRUE)
+            factor(rep(as.character(min_val), n()), levels = as.character(min_val))
+          }
+        ) %>%
+        ungroup()
+      
+      
+      fraction_df <- data_set %>%
+        group_by(length_bin, score_bin) %>%
+        summarise(
+          number = n(),
+          frac_in_parents_ovlap0.5 = mean(Observed_in_Parent_0.5, na.rm = TRUE),
+          se_ovlap0.5 = sqrt(frac_in_parents_ovlap0.5 * (1 - frac_in_parents_ovlap0.5) / number),
+          avg_score = mean(!!var_sym, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        mutate(
+          size_bin = cut(
+            number,
+            breaks = c(0, 1000, 2000, 3000, 5000, Inf),
+            labels = c("<1K", "1-2K", "2-3K", "3-5K", ">5K"),
+            include.lowest = TRUE, right = FALSE
+          ),
+          size_bin = factor(size_bin, levels = c("<1K", "1-2K", "2-3K", "3-5K", ">5K"))
+        )
+      
+      fraction_df$length_bin = factor(fraction_df$length_bin,levels=length_bin_levels)
+      child_cnv$length_bin = factor(child_cnv$length_bin,levels=length_bin_levels)
+      
+      number_unique_length_bin = c(number_unique_length_bin,length(unique(fraction_df[fraction_df$number >= min_bin_size, ]$length_bin)))
+      
+      p <- ggplot(fraction_df[fraction_df$number >= min_bin_size, ], 
+                  aes(x = avg_score, y = frac_in_parents_ovlap0.5, 
+                      group = length_bin, col = length_bin)) +
+        geom_point(data = child_cnv[!duplicated(child_cnv$length_bin),],alpha=0,y=0.5,aes_string(col = "length_bin",x=variable_x)) +
+        geom_line() +
+        geom_point() +
+        geom_errorbar(aes(
+          ymin = frac_in_parents_ovlap0.5 - se_ovlap0.5,
+          ymax = frac_in_parents_ovlap0.5 + se_ovlap0.5
+        ), width = 0) +
+        labs(
+          x = paste("Average", variable_x),
+          y = ifelse(type == "DUP", "", "Mendelian Precision")  # hide ylab for DUP
+        ) +
+        theme_bw() +
+        scale_color_manual("Length bins" , values = fixed_colors)  +  # fixed colors here
+        theme(
+          axis.text = element_text(size = 18),
+          axis.title = element_text(size = 20),
+          legend.text = element_text(size = 18),
+          legend.title = element_text(size = 20)
+        ) + ggtitle(paste(type))  + guides(
+          color = guide_legend(
+            override.aes = list(
+              size = 4,
+              alpha = 1,
+              linetype = 0  # removes the line in the legend
+            )
+          )
+        ) + theme(legend.position = "none")
+      
+      if (max(fraction_df$avg_score) > 1){
+        p = p + 
+          annotation_logticks(sides = "b") +
+          scale_x_log10(labels = scales::label_number(accuracy = 1)) 
+      }
+      
+      plot_list[[paste(variable_x, type)]] <- p
+    }
+  }
+  
+  
+  
+  # Build rows of DEL | DUP for each variable
+  rows <- lapply(x_var_list, function(v) {
+    plot_list[[paste(v, "DEL")]] | plot_list[[paste(v, "DUP")]]
+  })
+  
+  if (length(unique(number_unique_length_bin)) >= 2){
+    # Combine rows only, and collect legend once
+    final_plot <- wrap_plots(rows, ncol = 1) + plot_layout(guides = "collect") &
+      theme(legend.position = "top",
+            legend.box.margin = margin(l = -850))
+  } else {
+    final_plot <- wrap_plots(rows, ncol = 1) + plot_layout(guides = "collect") &
+      theme(legend.position = "top")
+  }
+  final_plot
+})
+```
+
