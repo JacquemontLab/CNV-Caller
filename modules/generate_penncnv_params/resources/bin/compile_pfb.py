@@ -5,7 +5,7 @@
 # Date: 16-05-2025
 # Description: This script processes a list of SNP files, computes the 
 #              PFB (Proportional Frequency of B Allele) for each SNP across 
-#              multiple files. If no valid number across the population, then BAF of 2 is assigned.
+#              multiple files.
 #
 # Warning:
 # - This script processes large datasets and may require substantial memory.
@@ -73,6 +73,7 @@ def main():
                               skip_rows=1,
                               new_columns=["Name","Chr","Position","LRR", "BAF"],
                               schema_overrides=[pl.String, pl.String, pl.Int32, pl.Float32, pl.Float32])
+                              .drop_nans()
                               .sink_parquet("compiled_1k.parquet"))
     print("Built Parquet")
 
@@ -85,7 +86,6 @@ def main():
                 Name,
                 Chr,
                 Position,
-                WHEN COUNT(*) FILTER (WHERE NOT isnan(BAF)) = 0 THEN 2
                 ROUND(SUM(BAF) / COUNT(BAF), 3) AS PFB
             FROM read_parquet('compiled_1k.parquet')
             GROUP BY Name, Chr, Position
