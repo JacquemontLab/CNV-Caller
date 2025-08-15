@@ -3,6 +3,40 @@
 nextflow.enable.dsl=2
 
 
+
+process formating_quantisnp{
+    tag "formating_quantisnp"
+
+    input:
+    path quantisnp_cnv_raw
+
+    output:
+    path "QuantiSNP_CNV.tsv"
+
+    script:
+    """
+    format_quantisnp_cnv.sh "${quantisnp_cnv_raw}" "QuantiSNP_CNV.tsv"
+    """
+}
+
+
+
+process formating_penncnv{
+    tag "formating_penncnv"
+
+    input:
+    path penncnv_cnv_raw
+
+    output:
+    path "PennCNV_CNV.tsv"
+
+    script:
+    """
+    format_penncnv_cnv.sh "${penncnv_cnv_raw}" "PennCNV_CNV.tsv"
+    """
+}
+
+
 process sample_qc_report {
     tag "sample_qc_report"
 
@@ -72,7 +106,6 @@ process unfilter_cnv_qc {
      dataset='$input_with_denovo_annotation', x_var_list='Confidence,Length,Num_Probes'),
         output_file='$output_name'
         )"
-
     """
 }
 
@@ -90,7 +123,6 @@ process denovo_cnv_annotation{
     script:
     """
     cnv_trio_inheritance.py --cnv "$input_cnv" --pedigree $trio_file --type_col Type --overlap 0.5 --output denovo_cnv_annotation.tsv
-
     """
 }
 
@@ -169,8 +201,8 @@ workflow REPORT_PDF {
     plink2samplemetadata_tsv
     trio_file
     penncnv_qc
-    penncnv_cnv
-    quantisnp_cnv
+    penncnv_cnv_raw
+    quantisnp_cnv_raw
     merged_cnv
 
 
@@ -183,7 +215,9 @@ workflow REPORT_PDF {
                     sample_qc_rmd
                     )
 
-
+    penncnv_cnv = formating_penncnv(penncnv_cnv_raw)
+    quantisnp_cnv = formating_quantisnp(quantisnp_cnv_raw)
+    
     // Call the sub-workflows
     penncnv_unfilter_cnv_qc = do_penncnv_qc("${dataset_name} PennCNV Unfilter",penncnv_cnv, trio_file)
     quantisnp_unfilter_cnv_qc = do_quantisnp_qc("${dataset_name} QuantiSNP Unfilter",quantisnp_cnv, trio_file)

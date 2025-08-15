@@ -290,7 +290,7 @@ pedigree_cols = family_info.collect_schema().names()
 
 # Keep only SampleID from pedigree
 cols_to_drop = [col for col in pedigree_cols if col != "SampleID"]
-print(cols_to_drop)
+
 # Drop them if they exist in the final DataFrame
 lookup = result.select(f_order).drop(cols_to_drop, strict=False).sink_csv(f"{OUTPUT}", separator = "\t")
 

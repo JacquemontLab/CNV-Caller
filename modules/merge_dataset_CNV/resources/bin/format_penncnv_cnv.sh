@@ -39,47 +39,55 @@ else
 fi
 
 # Extracts and reformats key CNV fields from a PennCNV file, standardizes values, and outputs a compressed tab-delimited file.
-$read_cmd "${input_file}" | awk 'BEGIN {
+$read_cmd "${input_file}" | grep 'numsnp' | awk 'BEGIN {
     print "SampleID\tChr\tStart\tEnd\tCopy_Number\tConfidence\tNum_Probes\tLength\tStart_SNP\tEnd_SNP"
 }
 {
-    # Parse chr:start-end
-    split($1, a, /[:-]/)
-    chr = a[1]
-    start = a[2]
-    end = a[3]
+    pos = index($0, "chr")
+    if (pos > 0) {
+        line = substr($0, pos)  # trim line from first "chr"
+        
+        # split trimmed line by whitespace
+        n = split(line, fields, /[ \t]+/)
+        
+        # Parse chr:start-end
+        split(fields[1], a, /[:-]/)
+        chr = a[1]
+        start = a[2]
+        end = a[3]
 
-    # Remove prefix from fields
-    nbprobes = $2
-    sub(/^numsnp=/, "", nbprobes)
+        # Remove prefix from fields
+        nbprobes = fields[2]
+        sub(/^numsnp=/, "", nbprobes)
 
-    len = $3
-    sub(/^length=/, "", len)
-    gsub(/,/, "", len)
+        len = fields[3]
+        sub(/^length=/, "", len)
+        gsub(/,/, "", len)
 
-    copynumber = $4
-    sub(/^.*cn=/, "", copynumber)
+        copynumber = fields[4]
+        sub(/^.*cn=/, "", copynumber)
 
-    # SampleID extraction from file path
-    n = split($5, parts, "/")
-    split(parts[n], name_parts, ".")
-    sample = name_parts[1]
+        # SampleID extraction from file path
+        m = split(fields[5], parts, "/")
+        split(parts[m], name_parts, ".")
+        sample = name_parts[1]
 
-    startsnp = $6
-    sub(/^startsnp=/, "", startsnp)
+        startsnp = fields[6]
+        sub(/^startsnp=/, "", startsnp)
 
-    endsnp = $7
-    sub(/^endsnp=/, "", endsnp)
+        endsnp = fields[7]
+        sub(/^endsnp=/, "", endsnp)
 
-    conf = $8
-    sub(/^conf=/, "", conf)
+        conf = fields[8]
+        sub(/^conf=/, "", conf)
 
-    # Force numeric conversion
-    nbprobes += 0
-    len += 0
-    conf += 0
+        # Force numeric conversion
+        nbprobes += 0
+        len += 0
+        conf += 0
 
-    print sample"\t"chr"\t"start"\t"end"\t"copynumber"\t"conf"\t"nbprobes"\t"len"\t"startsnp"\t"endsnp
+        print sample"\t"chr"\t"start"\t"end"\t"copynumber"\t"conf"\t"nbprobes"\t"len"\t"startsnp"\t"endsnp
+    }
 }' | {
     if [[ "$output_file" == *.gz ]]; then
         gzip > "$output_file"

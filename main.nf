@@ -95,7 +95,9 @@ process trio_from_plink2samplemetadata {
 
 workflow {
     main:
-    // Define inputs
+    // Inputs from params
+    penncnv_calls_path    = params.penncnv_calls_path
+    quantisnp_calls_path  = params.quantisnp_calls_path
     list_sample_baflrrpath = params.list_sample_baflrrpath
     list_baflrr_path = params.list_baflrr_path
     plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
@@ -104,80 +106,93 @@ workflow {
     batch_size = params.batch_size
     dataset_name = params.dataset_name
     
-    '''
-    PREPARE INPUTS for PennCNV
-    '''
-    // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
-    PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
-                             plink2samplemetadata_tsv,
-                             gc_correction_dir,
-                             genome_version )
+    
+    has_input_calls = penncnv_calls_path && quantisnp_calls_path
+
+    if ( ! has_input_calls ) {
+        '''
+        PREPARE INPUTS for PennCNV
+        '''
+        // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
+        PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
+                                plink2samplemetadata_tsv,
+                                gc_correction_dir,
+                                genome_version )
 
 
-    sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
-    trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
+        sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
+        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
 
-    '''
-    CALLING CNVs AND MERGE
-    '''
-    CALL_CNV_PARALLEL    ( Channel.fromPath(list_baflrr_path),
-                           PREPARE_PENNCNV_INPUTS.out.pfb_file, 
-                           PREPARE_PENNCNV_INPUTS.out.gc_model,
-                           sex_file,
-                           genome_version,
-                           batch_size )
+        '''
+        CALLING CNVs AND MERGE
+        '''
+        CALL_CNV_PARALLEL    ( Channel.fromPath(list_baflrr_path),
+                            PREPARE_PENNCNV_INPUTS.out.pfb_file, 
+                            PREPARE_PENNCNV_INPUTS.out.gc_model,
+                            sex_file,
+                            genome_version,
+                            batch_size )
+        
+        penncnv_cnv_raw = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
+        quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
 
+        penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+
+    } else {
+        penncnv_cnv_raw = penncnv_calls_path
+        quantisnp_cnv_raw = quantisnp_calls_path
+    }
 
     '''
     PREFILTERING - MERGING
     '''
-    MERGE_CNV_CALLS ( CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch,
-                    CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch,
+    MERGE_CNV_CALLS (
+                    quantisnp_cnv_raw,
+                    penncnv_cnv_raw,
                     file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
                     genome_version
                      )
 
-    penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
-    penncnv_cnv = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
-    quantisnp_cnv = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
-
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
 
-    REPORT_PDF ( 
-        dataset_name,
-        plink2samplemetadata_tsv,
-        trio_file,
-        penncnv_qc,
-        penncnv_cnv,
-        quantisnp_cnv,
-        merged_cnv)
+    // Run report only if requested
+    if (params.report) {
+        REPORT_PDF ( 
+            dataset_name,
+            plink2samplemetadata_tsv,
+            trio_file,
+            penncnv_qc,
+            penncnv_cnv_raw,
+            quantisnp_cnv_raw,
+            merged_cnv) 
+    }
 
     '''
     SUMMARY BUILDER
     '''
-                                           
-    buildSummary  (dataset_name,
+    // Always run summary builder (change if you want this conditional too)
+    buildSummary  ( dataset_name,
                     genome_version,
-                    REPORT_PDF.out.quantisnp_unfilter_cnv_qc )
+                    params.report ? REPORT_PDF.out.merged_cnv_qc : merged_cnv )
 
 
     publish:
 
-// MERGED CNV DATASET
+    // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
 
-// Before filter results
-    penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
-    penncnv_cnv = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
-    penncnv_cnv_raw = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
-    quantisnp_cnv = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
-    quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch 
+    // Before filter results
+    penncnv_qc       = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_qc_ch : null
+    penncnv_cnv      = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_ch : null
+    penncnv_cnv_raw  = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch : penncnv_cnv_raw
+    quantisnp_cnv    = !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_ch : null
+    quantisnp_cnv_raw= !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch : quantisnp_cnv_raw
 
-// REPORT
-    penncnv_unfilter_cnv_qc = REPORT_PDF.out.penncnv_unfilter_cnv_qc
-    quantisnp_unfilter_cnv_qc = REPORT_PDF.out.quantisnp_unfilter_cnv_qc
-    merged_cnv_qc = REPORT_PDF.out.merged_cnv_qc
-    sample_qc_report = REPORT_PDF.out.sample_qc_report
+    // REPORT outputs only if report was run
+    penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : null
+    quantisnp_unfilter_cnv_qc = params.report ? REPORT_PDF.out.quantisnp_unfilter_cnv_qc : null
+    merged_cnv_qc             = params.report ? REPORT_PDF.out.merged_cnv_qc : null
+    sample_qc_report          = params.report ? REPORT_PDF.out.sample_qc_report : null
 
 }
 
@@ -185,49 +200,47 @@ workflow {
 output {
     merged_cnv {
         mode 'copy'
+        path "${params.dataset_name}/"
     }
     penncnv_qc {
         mode 'copy'
-        path "calls_unfiltered/penncnv/"
+        path "${params.dataset_name}/calls_unfiltered/penncnv/"
     }
     penncnv_cnv {
         mode 'copy'
-        path "calls_unfiltered/penncnv/"
+        path "${params.dataset_name}/calls_unfiltered/penncnv/"
     }
     penncnv_cnv_raw {
         mode 'copy'
-        path "calls_unfiltered/penncnv/"
+        path "${params.dataset_name}/calls_unfiltered/penncnv/"
     }
     quantisnp_cnv {
         mode 'copy'
-        path "calls_unfiltered/quantisnp/"
+        path "${params.dataset_name}/calls_unfiltered/quantisnp/"
     }
 
     quantisnp_cnv_raw {
         mode 'copy'
-        path "calls_unfiltered/quantisnp/"
+        path "${params.dataset_name}/calls_unfiltered/quantisnp/"
     }
     penncnv_unfilter_cnv_qc {
         mode 'copy'
-        path "docs/"
+        path "${params.dataset_name}/docs/"
     }
 
     quantisnp_unfilter_cnv_qc {
         mode 'copy'
-        path "docs/"
+        path "${params.dataset_name}/docs/"
     }
 
     merged_cnv_qc {
         mode 'copy'
-        path "docs/"
+        path "${params.dataset_name}/docs/"
     }
 
     sample_qc_report {
         mode 'copy'
-        path "docs/"
+        path "${params.dataset_name}/docs/"
     }
 
 }
-
-
-

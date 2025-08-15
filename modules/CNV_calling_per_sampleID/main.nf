@@ -37,7 +37,7 @@ process callBatchCNVs {
     # Default parameters avalable in the docker:
     chr="1:23"
     gcdir=/usr/local/QuantiSNP-2.3/GC_correction/${genome_version}/GCdir/
-    hmm_file="/usr/local/PennCNV-1.0.5/lib/hhall.hmm"
+    hmm_file="/usr/local/PennCNV-1.0.5/lib/wgs.hmm"
     levels="/usr/local/QuantiSNP-2.3/bin/config/levels.dat"
     config="/usr/local/QuantiSNP-2.3/bin/config/params.dat"
 
@@ -87,13 +87,13 @@ workflow  CALL_CNV_PARALLEL {
     penncnv_cnv_ch = callBatchCNVs.out.penncnv_cnv
         .flatten()
         .collectFile( keepHeader : true, 
-                    name       : "Penncnv_CNV.tsv")
+                    name       : "PennCNV_CNV.tsv")
 
     // Collect merged raw PennCNV outputs
     penncnv_cnv_raw_ch = callBatchCNVs.out.penncnv_cnv_raw
         .flatten()
         .collectFile(keepHeader: false, 
-                    name: "PennCNV_raw_calls.cnv")
+                    name: "PennCNV_raw_calls.txt")
 
     // Collect merged QuantiSNP CNV outputs
     quantisnp_cnv_ch = callBatchCNVs.out.quantisnp_cnv
@@ -105,7 +105,7 @@ workflow  CALL_CNV_PARALLEL {
     quantisnp_cnv_raw_ch = callBatchCNVs.out.quantisnp_cnv_raw
         .flatten()
         .collectFile(keepHeader: true, 
-                    name: "QuantiSNP_raw.cnv")
+                    name: "QuantiSNP_raw_calls.txt")
 
                     
     emit:
