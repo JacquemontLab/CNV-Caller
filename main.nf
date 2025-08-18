@@ -92,8 +92,8 @@ process trio_from_plink2samplemetadata {
 }
 
 
-
 workflow {
+    
     main:
     // Inputs from params
     penncnv_calls_path    = params.penncnv_calls_path
@@ -105,6 +105,7 @@ workflow {
     genome_version = params.genome_version
     batch_size = params.batch_size
     dataset_name = params.dataset_name
+    
     
     
     has_input_calls = penncnv_calls_path && quantisnp_calls_path
@@ -139,8 +140,8 @@ workflow {
         penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
 
     } else {
-        penncnv_cnv_raw = penncnv_calls_path
-        quantisnp_cnv_raw = quantisnp_calls_path
+        penncnv_cnv_raw   = Channel.fromPath(penncnv_calls_path)
+        quantisnp_cnv_raw = Channel.fromPath(quantisnp_calls_path)
     }
 
     '''
@@ -182,23 +183,28 @@ workflow {
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
 
     // Before filter results
-    penncnv_qc       = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_qc_ch : null
-    penncnv_cnv      = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_ch : null
+    penncnv_qc       = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_qc_ch : Channel.empty()
+    penncnv_cnv      = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_ch : Channel.empty()
     penncnv_cnv_raw  = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch : penncnv_cnv_raw
-    quantisnp_cnv    = !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_ch : null
+    quantisnp_cnv    = !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_ch : Channel.empty()
     quantisnp_cnv_raw= !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch : quantisnp_cnv_raw
 
     // REPORT outputs only if report was run
-    penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : null
-    quantisnp_unfilter_cnv_qc = params.report ? REPORT_PDF.out.quantisnp_unfilter_cnv_qc : null
-    merged_cnv_qc             = params.report ? REPORT_PDF.out.merged_cnv_qc : null
-    sample_qc_report          = params.report ? REPORT_PDF.out.sample_qc_report : null
+    penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : Channel.empty()
+    quantisnp_unfilter_cnv_qc = params.report ? REPORT_PDF.out.quantisnp_unfilter_cnv_qc : Channel.empty()
+    merged_cnv_qc             = params.report ? REPORT_PDF.out.merged_cnv_qc : Channel.empty()
+    sample_qc_report          = params.report ? REPORT_PDF.out.sample_qc_report : Channel.empty()
 
+    report_summary = buildSummary.out
 }
 
 
 output {
     merged_cnv {
+        mode 'copy'
+        path "${params.dataset_name}/"
+    }
+    report_summary {
         mode 'copy'
         path "${params.dataset_name}/"
     }
@@ -242,5 +248,4 @@ output {
         mode 'copy'
         path "${params.dataset_name}/docs/"
     }
-
 }

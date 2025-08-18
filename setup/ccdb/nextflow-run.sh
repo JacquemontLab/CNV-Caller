@@ -7,16 +7,12 @@
 #SBATCH --output=CNV_caller_%j.log     # Standard output and error log
 #SBATCH --account=rrg-jacquese            # Account name
 
-
-list_sample_baflrrpath=/home/flben/links/projects/rrg-jacquese/flben/WES_CNV_calls/data/baf_lrr_filter_path.tsv
-plink2samplemetadata_tsv=/home/flben/links/projects/rrg-jacquese/flben/Plink2SampleMetadata/results/sample_metadata_from_plink.tsv
 GC_correction_dir=/home/flben/links/projects/rrg-jacquese/flben/WES_CNV_calls/scripts/CNV-Caller/resources/GC_correction/
-batch_size=384
-dataset_name="SPARK_WES_N2533"
-genome_version="GRCh38"
+dataset_name="UKBB_N488k"
+genome_version="GRCh37"
 
-
-
+penncnv_calls_path=/home/flben/links//projects/rrg-jacquese/LAB_WORKSPACE/RAW_DATA/Genetic/UKBB/PennCNV_raw_calls.txt
+quantisnp_calls_path=/home/flben/links//projects/rrg-jacquese/LAB_WORKSPACE/RAW_DATA/Genetic/UKBB/QuantiSNP_raw_calls.txt
 
 # Ensure Nextflow runs offline (no internet check)
 export NXF_OFFLINE=true
@@ -24,14 +20,10 @@ export NXF_OFFLINE=true
 module load nextflow
 module load r
 
-cut -f2 $list_sample_baflrrpath > list_baflrr_path.txt
-
 nextflow run main.nf \
     --dataset_name "$dataset_name" \
-    --list_sample_baflrrpath "$list_sample_baflrrpath" \
-    --list_baflrr_path "list_baflrr_path.txt" \
-    --plink2samplemetadata_tsv "$plink2samplemetadata_tsv" \
-    --batch_size "$batch_size" \
+    --penncnv_calls_path "$penncnv_calls_path" \
+    --quantisnp_calls_path "$quantisnp_calls_path" \
     --gc_correction_dir "$GC_correction_dir" \
     --genome_version "$genome_version" \
     -c setup/ccdb/ccdb.config \
@@ -40,6 +32,15 @@ nextflow run main.nf \
 
 
 
+    # penncnv_calls_path    = params.penncnv_calls_path
+    # quantisnp_calls_path  = params.quantisnp_calls_path
+    # list_sample_baflrrpath = params.list_sample_baflrrpath
+    # list_baflrr_path = params.list_baflrr_path
+    # plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
+    # gc_correction_dir = params.gc_correction_dir
+    # genome_version = params.genome_version
+    # batch_size = params.batch_size
+    # dataset_name = params.dataset_name
     # -with-dag flowchart.pdf \
     # -with-timeline timeline.html \
     # -with-report report.html \
