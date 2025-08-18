@@ -41,11 +41,11 @@ qc_df <- read.delim(params$qc_input, stringsAsFactors = FALSE,
 # Calculate pass/fail logical columns for each metric
 qc_df <- qc_df %>%
   mutate(
-    pass_Call_Rate = Call_Rate > 0.98,
-    pass_LRR_SD = LRR_SD < 0.35,
-    pass_BAF_SD = BAF_SD < 0.08,
-    pass_WF = WF > -0.05 & WF < 0.05,
-    pass_all = pass_Call_Rate & pass_LRR_SD & pass_BAF_SD & pass_WF
+    pass_Call_Rate = Call_Rate >= 0.98,
+    pass_LRR_SD    = LRR_SD <= 0.30,
+    pass_BAF_DRIFT = BAF_DRIFT <= 0.01,   # better than BAF_SD
+    pass_WF        = abs(WF) <= 0.05,
+    pass_all       = pass_Call_Rate & pass_LRR_SD & pass_BAF_DRIFT & pass_WF
   )
 
 # Count fails per metric (to print below plots)
@@ -54,7 +54,7 @@ fail_counts <- qc_df %>%
     total_samples = n(),
     fail_Call_Rate = sum(!pass_Call_Rate),
     fail_LRR_SD = sum(!pass_LRR_SD),
-    fail_BAF_SD = sum(!pass_BAF_SD),
+    fail_BAF_DRIFT = sum(!pass_BAF_DRIFT),
     fail_WF = sum(!pass_WF),
     pass_all = sum(pass_all)
   )
@@ -66,7 +66,27 @@ sex_summary <- qc_df %>%
 knitr::kable(sex_summary, caption = "Number of Samples by Sex")
 ```
 
-## Call Rate Distribution
+
+
+## Filter Quality Control
+
+According to Liu, J., Zhang, L., Xu, L. *et al.*  
+*Analysis of copy number variations in the sheep genome using 50K SNP BeadChip array.*  
+**BMC Genomics** 14, 229 (2013). [https://doi.org/10.1186/1471-2164-14-229](https://doi.org/10.1186/1471-2164-14-229)
+
+The quality filters recommended were:  
+
+- **LRR standard deviation (SD) ≤ 0.30**  
+- **BAF drift ≤ 0.01**  
+- **Waviness factor between -0.05 and 0.05**
+
+
+In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we also recommend applying:  
+
+- **Call Rate ≥ 0.98**
+
+
+### Call Rate Distribution
 
 ```{r Call_Rate-plot, fig.width=5, fig.height=3}
 ggplot(qc_df, aes(y = Call_Rate, x = "")) +
@@ -83,41 +103,41 @@ cat(sprintf("Number of samples NOT passing Call Rate threshold (>0.98): %d\n", f
 
 ```
 
-## LRR_SD Distribution
+### LRR_SD Distribution
 
 ```{r lrrsd-plot, fig.width=5, fig.height=3}
 ggplot(qc_df, aes(y = LRR_SD, x = "")) +
   geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
   theme_bw() + ylab("Log R Ratio SD") + xlab("") +
-  geom_hline(yintercept = 0.35, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.4, label = "Recommended Threshold: <0.35", color = "#E31A1C", size = 3, hjust = -0.08) +
+  geom_hline(yintercept = 0.3, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.4, label = "Recommended Threshold: <0.3", color = "#E31A1C", size = 3, hjust = -0.08) +
   theme(
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16)
   ) + coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing LRR_SD threshold (<0.35): %d\n", fail_counts$fail_LRR_SD))
+cat(sprintf("Number of samples NOT passing LRR_SD threshold (<0.3): %d\n", fail_counts$fail_LRR_SD))
 
 ```
 
-## BAF_SD Distribution
+### BAF_DRIFT Distribution
 
 ```{r bafsd-plot, fig.width=5, fig.height=3}
-ggplot(qc_df, aes(y = BAF_SD, x = "")) +
+ggplot(qc_df, aes(y = BAF_DRIFT, x = "")) +
   geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
-  theme_bw() + ylab("B Allele Frequency SD") + xlab("") +
-  geom_hline(yintercept = 0.08, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.09, label = "Recommended Threshold: <0.08", color = "#E31A1C", size = 3, hjust = -0.08) +
+  theme_bw() + ylab("B Allele Frequency DRIFT") + xlab("") +
+  geom_hline(yintercept = 0.01, color = "#E31A1C", linetype = "dashed", size = 1) +
+  annotate("text", x = 1, y = 0.02, label = "Recommended Threshold: <0.01", color = "#E31A1C", size = 3, hjust = -0.01) +
   theme(
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16)
   )+ coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing BAF_SD threshold (<0.08): %d\n", fail_counts$fail_BAF_SD))
+cat(sprintf("Number of samples NOT passing BAF_DRIFT threshold (<0.01): %d\n", fail_counts$fail_BAF_SD))
 
 ```
 
-## WF (Wave Factor) Distribution
+### WF (Wave Factor) Distribution
 
 ```{r wf-plot, fig.width=5, fig.height=3}
 ggplot(qc_df, aes(y = WF, x = "")) +

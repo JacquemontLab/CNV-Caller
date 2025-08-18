@@ -26,6 +26,7 @@ nextflow run main.nf \
     --quantisnp_calls_path "$quantisnp_calls_path" \
     --gc_correction_dir "$GC_correction_dir" \
     --genome_version "$genome_version" \
+    --report "true" \
     -c setup/ccdb/ccdb.config \
     -profile standard \
     -resume
