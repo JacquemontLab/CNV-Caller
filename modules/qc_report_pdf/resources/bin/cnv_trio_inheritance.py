@@ -79,7 +79,7 @@ elif ".tsv" not in suffix:
 # ------------------- Filter CNV Calls -------------------
 
 # +
-family_info = pl.scan_csv(PEDIGREE_FILE, separator="\t",infer_schema_length=100000)
+family_info = pl.scan_csv(PEDIGREE_FILE, separator="\t",infer_schema_length=1000000)
 
 #load CNV lazily
 if TYPE_COL:
@@ -87,7 +87,7 @@ if TYPE_COL:
         df_cnv = pl.scan_csv(FILE_CNV, 
                              separator = "\t", 
                              schema_overrides={f"{TYPE_COL}": pl.Categorical, 
-                                           "Chr": pl.Categorical},infer_schema_length=100000)
+                                           "Chr": pl.Categorical},infer_schema_length=1000000)
         print(f"Loading {FILE_CNV} in tsv mode and using {TYPE_COL} as type column")
     #casting to categorical for performance 
     else:
@@ -100,7 +100,7 @@ else:
         print(f"Loading {FILE_CNV} in tsv mode without type column")
         df_cnv = pl.scan_csv(FILE_CNV, 
                              separator = "\t", 
-                             schema_overrides={"Chr": pl.Categorical},infer_schema_length=100000)
+                             schema_overrides={"Chr": pl.Categorical},infer_schema_length=1000000)
     else:
         print(f"Loading {FILE_CNV} in parquet mode and without type column")
         df_cnv = pl.scan_parquet(FILE_CNV)
@@ -205,19 +205,19 @@ while count < ovl_count:
     #for the first file no join needed 
     if(count == 0):
         non_intersects_file = pl.scan_csv(f"non_intersect_ovlap{OVERLAPS[count]}.bed", 
-                                          separator = "\t", has_header = False,infer_schema_length=100000)
+                                          separator = "\t", has_header = False,infer_schema_length=1000000)
         #all false from non-interesects
         non_intersects = non_intersects_file.with_columns(pl.lit(False)
                                                           .alias(f"Observed_in_Parent_{OVERLAPS[count]}"))
         #all true from intersects
-        intersects_file = pl.scan_csv(f"intersect_ovlap{OVERLAPS[count]}.bed", separator = "\t", has_header = False,infer_schema_length=100000)
+        intersects_file = pl.scan_csv(f"intersect_ovlap{OVERLAPS[count]}.bed", separator = "\t", has_header = False,infer_schema_length=1000000)
         intersects = intersects_file.with_columns(pl.lit(True).alias(f"Observed_in_Parent_{OVERLAPS[count]}"))
         
         count += 1
     else:
         #non-intersects
         non_intersects_file = pl.scan_csv(f"non_intersect_ovlap{OVERLAPS[count]}.bed", 
-                                          separator = "\t", has_header = False,infer_schema_length=100000)
+                                          separator = "\t", has_header = False,infer_schema_length=1000000)
         
         non_intersects_file = non_intersects_file.with_columns(pl.lit(False)
                                                           .alias(f"Observed_in_Parent_{OVERLAPS[count]}"))
@@ -227,7 +227,7 @@ while count < ovl_count:
         
         #intersects file
         intersects_file = pl.scan_csv(f"intersect_ovlap{OVERLAPS[count]}.bed", 
-                                      separator = "\t", has_header = False,infer_schema_length=100000)
+                                      separator = "\t", has_header = False,infer_schema_length=1000000)
         
         intersects_file = intersects_file.with_columns(pl.lit(True).alias(f"Observed_in_Parent_{OVERLAPS[count]}"))
         intersects = intersects.join(intersects_file, on = ["column_1","column_2","column_3"])

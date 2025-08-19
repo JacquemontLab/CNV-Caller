@@ -42,9 +42,9 @@ qc_df <- read.delim(params$qc_input, stringsAsFactors = FALSE,
 qc_df <- qc_df %>%
   mutate(
     pass_Call_Rate = Call_Rate >= 0.98,
-    pass_LRR_SD    = LRR_SD <= 0.30,
-    pass_BAF_DRIFT = BAF_DRIFT <= 0.01,   # better than BAF_SD
-    pass_WF        = abs(WF) <= 0.05,
+    pass_LRR_SD    = LRR_SD < 0.30,
+    pass_BAF_DRIFT = BAF_DRIFT < 0.01,   # better than BAF_SD
+    pass_WF        = abs(WF) < 0.05,
     pass_all       = pass_Call_Rate & pass_LRR_SD & pass_BAF_DRIFT & pass_WF
   )
 
@@ -76,14 +76,14 @@ According to Liu, J., Zhang, L., Xu, L. *et al.*
 
 The quality filters recommended were:  
 
-- **LRR standard deviation (SD) ≤ 0.30**  
-- **BAF drift ≤ 0.01**  
-- **Waviness factor between -0.05 and 0.05**
+- **LRR standard deviation (SD) < 0.30**
+- **BAF drift < 0.01**
+- **Waviness factor between $-0.05$ and $0.05$**
 
 
 In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we also recommend applying:  
 
-- **Call Rate ≥ 0.98**
+- **Call Rate $\ge 0.98$**
 
 
 ### Call Rate Distribution
@@ -93,13 +93,13 @@ ggplot(qc_df, aes(y = Call_Rate, x = "")) +
   geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
   theme_bw() + ylab("Call Rate") + xlab("") +
   geom_hline(yintercept = 0.98, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.985, label = "Recommended Threshold: >0.98", color = "#E31A1C", size = 3, hjust = -0.08) +
+  annotate("text", x = 1, y = 0.99, label = "Recommended Threshold: >= 0.98", color = "#E31A1C", size = 3, hjust = -0.0) +
   theme(
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16)
   )
 
-cat(sprintf("Number of samples NOT passing Call Rate threshold (>0.98): %d\n", fail_counts$fail_Call_Rate))
+cat(sprintf("Number of samples NOT passing Call Rate threshold (>= 0.98): %d\n", fail_counts$fail_Call_Rate))
 
 ```
 
@@ -110,15 +110,18 @@ ggplot(qc_df, aes(y = LRR_SD, x = "")) +
   geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
   theme_bw() + ylab("Log R Ratio SD") + xlab("") +
   geom_hline(yintercept = 0.3, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.4, label = "Recommended Threshold: <0.3", color = "#E31A1C", size = 3, hjust = -0.08) +
+  annotate("text", x = 1, y = 0.4, label = "Recommended Threshold: < 0.3", color = "#E31A1C", size = 3, hjust = -0.08) +
   theme(
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16)
   ) + coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing LRR_SD threshold (<0.3): %d\n", fail_counts$fail_LRR_SD))
+cat(sprintf("Number of samples NOT passing LRR_SD threshold (< 0.3): %d\n", fail_counts$fail_LRR_SD))
 
 ```
+
+\newpage
+
 
 ### BAF_DRIFT Distribution
 
@@ -127,13 +130,13 @@ ggplot(qc_df, aes(y = BAF_DRIFT, x = "")) +
   geom_violin(fill = set_color[1], color = set_color[2], size = 1) +
   theme_bw() + ylab("B Allele Frequency DRIFT") + xlab("") +
   geom_hline(yintercept = 0.01, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.02, label = "Recommended Threshold: <0.01", color = "#E31A1C", size = 3, hjust = -0.01) +
+  annotate("text", x = 1, y = 0.02, label = "Recommended Threshold: < 0.01", color = "#E31A1C", size = 3, hjust = -0.01) +
   theme(
     axis.text = element_text(size = 14),
-    axis.title = element_text(size = 16)
+    axis.title = element_text(size = 13.5)
   )+ coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing BAF_DRIFT threshold (<0.01): %d\n", fail_counts$fail_BAF_SD))
+cat(sprintf("Number of samples NOT passing BAF_DRIFT threshold (< 0.01): %d\n", fail_counts$fail_BAF_DRIFT))
 
 ```
 
@@ -145,8 +148,8 @@ ggplot(qc_df, aes(y = WF, x = "")) +
   theme_bw() + ylab("Wave Factor") + xlab("") +
   geom_hline(yintercept = 0.05, color = "#E31A1C", linetype = "dashed", size = 1) +
   geom_hline(yintercept = -0.05, color = "#E31A1C", linetype = "dashed", size = 1) +
-  annotate("text", x = 1, y = 0.06, label = "Recommended Threshold: <0.05", color = "#E31A1C", size = 3, hjust = -0.08) +
-  annotate("text", x = 1, y = -0.06, label = "Recommended Threshold: >-0.05", color = "#E31A1C", size = 3, hjust = -0.06) +
+  annotate("text", x = 1, y = 0.07, label = "Recommended Threshold: < 0.05", color = "#E31A1C", size = 3, hjust = -0.08) +
+  annotate("text", x = 1, y = -0.07, label = "Recommended Threshold: > -0.05", color = "#E31A1C", size = 3, hjust = -0.06) +
   theme(
     axis.text = element_text(size = 14),
     axis.title = element_text(size = 16)

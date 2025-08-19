@@ -73,10 +73,10 @@ print(summary_stats)
 
 ```
 
-## Distribution of CNVs by Copy Number State
+## Distribution of CNVs by Type
 
 ```{r summary_cn, echo=FALSE}
-summary_stats <- table(child_cnv$Copy_Number)
+summary_stats <- table(child_cnv$Type)
 print(summary_stats)
 
 ```
@@ -242,18 +242,18 @@ final_plot
 
 \newpage
 
-## Mendelian precision across CNV length bins stratified by deletion and duplication types, two algorithm overlap thresholds, and filtering criteria (including segmental duplication exclusion and confidence score), with error estimates and minimum count filtering.
+## Mendelian precision across CNV length bins stratified by deletion and duplication types, two algorithm overlap thresholds, and filtering criteria (including segmental duplication exclusion and maximum confidence score), with error estimates and minimum count filtering.
 
 \vspace{1cm}
 
-```{r , echo=FALSE, warning=FALSE, fig.width=11, fig.height=10}
+```{r , echo=FALSE, warning=FALSE, fig.width=11, fig.height=12}
 
 plot_list <- list()
 
-list_overlap = c(0.1,0.7)
+list_overlap = c(0.5,0.7)
 
 for (type in c("DEL", "DUP")) {
-  score = 100
+  score = 50
   
   for (overlap_two_algo in list_overlap){
     
@@ -263,7 +263,7 @@ for (type in c("DEL", "DUP")) {
                          group_by(length_bin)  %>%
                          summarise(
                            number = n(),
-                           category = "All",
+                           Category = "All",
                            frac_in_parents_ovlap0.5 = mean(Observed_in_Parent_0.5, na.rm = TRUE),
                            se_ovlap0.5 = sqrt(frac_in_parents_ovlap0.5 * (1 - frac_in_parents_ovlap0.5) / number),
                            .groups = "drop"
@@ -274,7 +274,7 @@ for (type in c("DEL", "DUP")) {
                          group_by(length_bin)  %>%
                          summarise(
                            number = n(),
-                           category = "No ProbRegions",
+                           Category = "Problematic Regions < 0.5",
                            frac_in_parents_ovlap0.5 = mean(Observed_in_Parent_0.5, na.rm = TRUE),
                            se_ovlap0.5 = sqrt(frac_in_parents_ovlap0.5 * (1 - frac_in_parents_ovlap0.5) / number),
                            .groups = "drop"
@@ -282,11 +282,11 @@ for (type in c("DEL", "DUP")) {
                          ))
     
     
-    boxplot_df = rbind(boxplot_df, child_cnv[child_cnv$Two_Algorithm_Overlap >= overlap_two_algo & child_cnv$ProblematicRegions_Overlap < 0.5 & child_cnv$Confidence_max > score & child_cnv$Type == type,] %>%
+    boxplot_df = rbind(boxplot_df, child_cnv[child_cnv$Two_Algorithm_Overlap >= overlap_two_algo & child_cnv$ProblematicRegions_Overlap < 0.5 & child_cnv$Confidence_max >= score & child_cnv$Type == type,] %>%
                          group_by(length_bin)  %>%
                          summarise(
                            number = n(),
-                           category = paste0("No ProbRegions & Confidence > ", score),
+                           Category = paste0("Problematic Regions < 0.5 & Confidence max >= ", score),
                            frac_in_parents_ovlap0.5 = mean(Observed_in_Parent_0.5, na.rm = TRUE),
                            se_ovlap0.5 = sqrt(frac_in_parents_ovlap0.5 * (1 - frac_in_parents_ovlap0.5) / number),
                            .groups = "drop"
@@ -294,16 +294,13 @@ for (type in c("DEL", "DUP")) {
     )
     
     
-    boxplot_df$category = factor(boxplot_df$category,levels=unique(boxplot_df$category))
+    boxplot_df$Category = factor(boxplot_df$Category,levels=unique(boxplot_df$Category))
     boxplot_df$length_bin = factor(boxplot_df$length_bin,levels=length_bin_levels)
     
     p = ggplot(boxplot_df, 
-               aes(x = length_bin, y = frac_in_parents_ovlap0.5,       # use category for color (or shape/fill)
-                   group = interaction(length_bin, category), col = length_bin,shape = category)) +
-      geom_point(position = position_dodge(width = 0.6), size = 3) +
-      geom_text(aes(label=number),position = position_dodge(width = 0.6), 
-                angle = 90, 
-                vjust = 0.5, hjust = 1.5) +
+               aes(x = length_bin, y = frac_in_parents_ovlap0.5,       # use Category for color (or shape/fill)
+                   group = interaction(length_bin, Category), col = length_bin, shape = Category)) +
+      geom_point(position = position_dodge(width = 0.6), size = 3.5) +
       geom_errorbar(aes(
         ymin = frac_in_parents_ovlap0.5 - se_ovlap0.5,
         ymax = frac_in_parents_ovlap0.5 + se_ovlap0.5
@@ -312,6 +309,9 @@ for (type in c("DEL", "DUP")) {
         x = paste(""),
         y = ifelse(type == "DUP", "", "Mendelian Precision")  # hide ylab for DUP
       ) +
+      geom_text(aes(label=number),position = position_dodge(width = 0.6), 
+                angle = 90, 
+                vjust = 0.5, hjust = 1.5,color="black") +
       theme_bw() +
       scale_color_manual("Length bins" , values = fixed_colors)  +  # fixed colors here
       theme(
@@ -319,8 +319,9 @@ for (type in c("DEL", "DUP")) {
         axis.text = element_text(size = 18),
         axis.title = element_text(size = 20),
         legend.text = element_text(size = 14),
-        legend.title = element_text(size = 20)
-      ) + ggtitle(paste(type,"- CNVs with Two_Algorithm_Overlap >",overlap_two_algo))  + guides(
+        legend.title = element_text(size = 16),
+         plot.title = element_text(size = 18, face = "bold", hjust = 0.5)  # bold and larger title, centered
+      ) + ggtitle(paste(type,"- CNVs with\nTwo_Algorithm_Overlap >= ", overlap_two_algo))  + guides(
         color = guide_legend(
           override.aes = list(
             size = 4,

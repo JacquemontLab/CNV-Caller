@@ -15,13 +15,23 @@ process formating_quantisnp{
 
     script:
     """
-    format_quantisnp_cnv.sh "${quantisnp_cnv_raw}" "QuantiSNP_CNV.tsv"
+    #!/bin/bash
+    set -euo pipefail
+
+    # Check if header exists
+    first_col=\$(head -n 1 "${quantisnp_cnv_raw}" | cut -f1)
+
+    if [[ "\$first_col" != "SampleID" ]]; then
+        echo "Formatting QuantiSNP file: ${quantisnp_cnv_raw}"
+        format_quantisnp_cnv.sh "${quantisnp_cnv_raw}" "QuantiSNP_CNV.tsv"
+    else
+        echo "⚠️ Skipping QuantiSNP formatting: header detected in ${quantisnp_cnv_raw}"
+        cp "${quantisnp_cnv_raw}" "QuantiSNP_CNV.tsv"
+    fi
     """
 }
 
-
-
-process formating_penncnv{
+process formating_penncnv {
     tag "formating_penncnv"
 
     input:
@@ -32,7 +42,18 @@ process formating_penncnv{
 
     script:
     """
-    format_penncnv_cnv.sh "${penncnv_cnv_raw}" "PennCNV_CNV.tsv"
+    #!/bin/bash
+    set -euo pipefail
+
+    # Optionally, check for header (uncomment if needed)
+    first_col=\$(head -n 1 "${penncnv_cnv_raw}" | cut -f1)
+    if [[ "\$first_col" != "SampleID" ]]; then
+        echo "Formatting PennCNV file: ${penncnv_cnv_raw}"
+        format_penncnv_cnv.sh "${penncnv_cnv_raw}" "PennCNV_CNV.tsv"
+    else
+        echo "⚠️ Skipping PennCNV formatting: header detected in ${penncnv_cnv_raw}"
+        cp "${penncnv_cnv_raw}" "PennCNV_CNV.tsv"
+    fi
     """
 }
 

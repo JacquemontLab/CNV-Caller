@@ -37,7 +37,7 @@ process buildSummary {
         seconds=\$(( duration % 60 ))
 
        cat <<EOF > launch_report.txt
-       Calling Pipeline on ${cohort_tag} run summary:
+       CNV-Caller ${cohort_tag} run summary:
        run name: ${workflow.runName}
        version: ${workflow.manifest.version}
        configs: ${workflow.configFiles}
@@ -92,10 +92,36 @@ process trio_from_plink2samplemetadata {
 }
 
 
+process merge_sample_metadata {
+    tag "merge sample level data"
+
+    input:
+    path plink2samplemetadata_tsv
+    path penncnv_qc
+
+    output:
+    path "sampleDB.tsv"
+
+    script:
+    """
+    duckdb -c "
+    COPY (
+        SELECT a.*, b.* EXCLUDE SampleID
+        FROM read_csv_auto('${plink2samplemetadata_tsv}', sep='\t', header=true) a
+        JOIN read_csv_auto('${penncnv_qc}', sep='\t', header=true) b
+        USING (SampleID)
+    ) TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
+    "
+    """
+}
+
+
+
 workflow {
     
     main:
     // Inputs from params
+    penncnv_qc_path    = params.penncnv_qc_path
     penncnv_calls_path    = params.penncnv_calls_path
     quantisnp_calls_path  = params.quantisnp_calls_path
     list_sample_baflrrpath = params.list_sample_baflrrpath
@@ -107,6 +133,12 @@ workflow {
     dataset_name = params.dataset_name
     
     
+    if (plink2samplemetadata_tsv) {
+
+        sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
+        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
+
+    }
     
     has_input_calls = penncnv_calls_path && quantisnp_calls_path
 
@@ -119,10 +151,6 @@ workflow {
                                 plink2samplemetadata_tsv,
                                 gc_correction_dir,
                                 genome_version )
-
-
-        sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
-        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
 
         '''
         CALLING CNVs AND MERGE
@@ -142,19 +170,25 @@ workflow {
     } else {
         penncnv_cnv_raw   = Channel.fromPath(penncnv_calls_path)
         quantisnp_cnv_raw = Channel.fromPath(quantisnp_calls_path)
+        penncnv_qc = Channel.fromPath(penncnv_qc_path)
     }
 
     '''
     PREFILTERING - MERGING
     '''
     MERGE_CNV_CALLS (
-                    quantisnp_cnv_raw,
-                    penncnv_cnv_raw,
-                    file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
-                    genome_version
+                        quantisnp_cnv_raw,
+                        penncnv_cnv_raw,
+                        file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
+                        genome_version
                      )
 
+
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
+
+
+    merge_sample_metadata ( plink2samplemetadata_tsv , penncnv_qc )
+
 
     // Run report only if requested
     if (params.report) {
@@ -181,6 +215,7 @@ workflow {
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
+    sampleDB = merge_sample_metadata.out
 
     // Before filter results
     penncnv_qc       = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_qc_ch : Channel.empty()
@@ -204,9 +239,13 @@ output {
         mode 'copy'
         path "${params.dataset_name}/"
     }
-    report_summary {
+    sampleDB {
         mode 'copy'
         path "${params.dataset_name}/"
+    }
+    report_summary {
+        mode 'copy'
+        path "${params.dataset_name}/docs/"
     }
     penncnv_qc {
         mode 'copy'
