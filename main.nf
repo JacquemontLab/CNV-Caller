@@ -127,7 +127,6 @@ workflow {
     list_sample_baflrrpath = params.list_sample_baflrrpath
     list_baflrr_path = params.list_baflrr_path
     plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
-    gc_correction_dir = params.gc_correction_dir
     genome_version = params.genome_version
     batch_size = params.batch_size
     dataset_name = params.dataset_name
@@ -149,8 +148,7 @@ workflow {
         // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
         PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
                                 plink2samplemetadata_tsv,
-                                gc_correction_dir,
-                                genome_version )
+                                file("${projectDir}/resources/GC_correction/${genome_version}/gc_content_1k_windows.bed"))
 
         '''
         CALLING CNVs AND MERGE

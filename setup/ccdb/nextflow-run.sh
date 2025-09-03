@@ -7,7 +7,6 @@
 #SBATCH --output=CNV_caller_%j.log     # Standard output and error log
 #SBATCH --account=rrg-jacquese            # Account name
 
-GC_correction_dir=/home/flben/links/projects/rrg-jacquese/flben/WES_CNV_calls/scripts/CNV-Caller/resources/GC_correction/
 dataset_name="UKBB_N488k"
 genome_version="GRCh37"
 
@@ -24,7 +23,6 @@ nextflow run main.nf \
     --dataset_name "$dataset_name" \
     --penncnv_calls_path "$penncnv_calls_path" \
     --quantisnp_calls_path "$quantisnp_calls_path" \
-    --gc_correction_dir "$GC_correction_dir" \
     --genome_version "$genome_version" \
     --report "true" \
     -c setup/ccdb/ccdb.config \

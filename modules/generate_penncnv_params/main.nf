@@ -125,13 +125,10 @@ workflow PREPARE_PENNCNV_INPUTS {
         // Define inputs
         list_path_to_BAF_LRR
         plink2samplemetadata_output
-        gc_correction_dir
-        genome_version
+        gc_content_windows
 
         
     main:
-        // Construct the gc_content_windows path using string interpolation
-        def gc_content_windows = "${gc_correction_dir}/${genome_version}/gc_content_1k_windows.bed"
 
         // Step 1. Index all BAF+LRR files.
         // path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)

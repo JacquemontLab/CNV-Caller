@@ -15,15 +15,17 @@ Below is a graphical representation of the workflow:
 ![Workflow DAG](dag.png)
 
 
-### Prerequisite to run the Snakefile pipeline:
-PLINK files: .bim, .fam, and .bed
-Signal intensity files for each sample, named {SampleID}.BAF_LRR_Probes.tsv, with the following format:
-Name\tChr\tPosition\t{SampleID}.Log R Ratio\t{SampleID}.B Allele Freq
+### Prerequisite to run the pipeline:
+- list_sample_baflrrpath : A TSV file containing SampleID\tpath_to_BAF_LRR   The BAF LRR file name should be like : **{SampleID}.BAF_LRR.tsv**
+- list_baflrr_path : a TXT file containing paths to BAF LRR file (basically *cut -f2* of the first), with the following format: Name\tChr\tPosition\t{SampleID}.Log R Ratio\t{SampleID}.B Allele Freq
+- plink2samplemetadata_output : A TSV file containing SampleID\tCall_Rate\tSex\tFatherID\tMotherID (Father and Mother are only required if --report)
 
+- genome_version is **GRCh37** or **GRCh38**
 
-### 1. Step TODO
+Becarefull to the .hmm file used in process **callBatchCNVs**.
 
-TODO
+#### Other option have been implemented but not yet documented.
+#### Need to describe from the one on AllOfUS, the protocol of merging.
 
 
 ## More Documentation
@@ -40,10 +42,10 @@ We used the VEP docker: ensembl-vep : 113.0
 
 ## Current Limitations of the pipeline
 
-- For PennCNV, default files such as **hhall.hmm** are used (available in the Git repository):
+- For PennCNV, default files such as **hhall.hmm** or **wgs.hmm** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.1):
 [Git PennCNV](https://github.com/WGLab/PennCNV)
 
-- For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Git repository):
+- For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.1):
 [Git QuantiSNP](https://github.com/cwcyau/quantisnp)
 
 - Resource requirements of each step must be adjusted depending on the quantity of data analyzed.
