@@ -16,11 +16,12 @@ Below is a graphical representation of the workflow:
 
 
 ### Prerequisite to run the pipeline:
+- dataset_name : The name of the dataset used for directory and report names.
 - list_sample_baflrrpath : A TSV file containing SampleID\tpath_to_BAF_LRR   The BAF LRR file name should be like : **{SampleID}.BAF_LRR.tsv**
-- list_baflrr_path : a TXT file containing paths to BAF LRR file (basically *cut -f2* of the first), with the following format: Name\tChr\tPosition\t{SampleID}.Log R Ratio\t{SampleID}.B Allele Freq
-- plink2samplemetadata_output : A TSV file containing SampleID\tCall_Rate\tSex\tFatherID\tMotherID (Father and Mother are only required if --report)
-
+- list_baflrr_path : A TXT file containing paths to BAF LRR file (basically *cut -f2* of the first). BAF LRR files should have the following format: Name\tChr\tPosition\t{SampleID}.Log R Ratio\t{SampleID}.B Allele Freq
+- plink2samplemetadata_output : A TSV file containing SampleID\tCall_Rate\tSex\tFatherID\tMotherID (Father and Mother are only required if --report "true")
 - genome_version is **GRCh37** or **GRCh38**
+- batch_size :  The number of batch to process
 
 Becarefull to the .hmm file used in process **callBatchCNVs**.
 

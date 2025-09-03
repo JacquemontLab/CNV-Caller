@@ -10,8 +10,9 @@
 dataset_name="UKBB_N488k"
 genome_version="GRCh37"
 
-penncnv_calls_path=/home/flben/links//projects/rrg-jacquese/LAB_WORKSPACE/RAW_DATA/Genetic/UKBB/PennCNV_raw_calls.txt
-quantisnp_calls_path=/home/flben/links//projects/rrg-jacquese/LAB_WORKSPACE/RAW_DATA/Genetic/UKBB/QuantiSNP_raw_calls.txt
+list_sample_baflrrpath=/home/flben/list.tsv
+
+list_baflrr_path=$(tail -n +2 "$list_sample_baflrrpath" | cut -f2)
 
 # Ensure Nextflow runs offline (no internet check)
 export NXF_OFFLINE=true
@@ -21,26 +22,13 @@ module load r
 
 nextflow run main.nf \
     --dataset_name "$dataset_name" \
-    --penncnv_calls_path "$penncnv_calls_path" \
-    --quantisnp_calls_path "$quantisnp_calls_path" \
+    --list_sample_baflrrpath "$list_sample_baflrrpath" \
+    --list_baflrr_path "$list_baflrr_path" \
+    --plink2samplemetadata_output "$plink2samplemetadata_output" \
     --genome_version "$genome_version" \
-    --report "true" \
+    --batch_size 10 \
     -c setup/ccdb/ccdb.config \
     -profile standard \
     -resume
 
 
-
-    # penncnv_calls_path    = params.penncnv_calls_path
-    # quantisnp_calls_path  = params.quantisnp_calls_path
-    # list_sample_baflrrpath = params.list_sample_baflrrpath
-    # list_baflrr_path = params.list_baflrr_path
-    # plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
-    # gc_correction_dir = params.gc_correction_dir
-    # genome_version = params.genome_version
-    # batch_size = params.batch_size
-    # dataset_name = params.dataset_name
-    # -with-dag flowchart.pdf \
-    # -with-timeline timeline.html \
-    # -with-report report.html \
-    # -with-trace trace.txt \
