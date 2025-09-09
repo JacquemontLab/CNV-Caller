@@ -1,6 +1,6 @@
 [![Jacquemont's Lab Header](labheader.png)](https://www.jacquemont-lab.org/)
 
-[Git Repository CNV-Calling-Microarray](https://github.com/JacquemontLab/CNV-Calling-Microarray)
+[Git Repository CNV-Caller](https://github.com/JacquemontLab/CNV-Caller)
 
 # Documentation of the CNV Calling Pipeline for Microarray
 This repository contains a bioinformatics pipeline for the discovery of copy number variants (CNVs).
