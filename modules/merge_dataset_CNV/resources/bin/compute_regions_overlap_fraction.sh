@@ -111,7 +111,7 @@ for item in ${regions_to_overlap//,/ }; do
             frac = overlap / size ;
             print $0, frac
         }' "$overlap_summary" > "$temp_frac_overlap_bed"
-
+    
     # --- Append the fraction to the original CNV data ---
     updated_cnv_annotated=$(mktemp)
     paste "$cnv_annotated" <(cut -f5 "$temp_frac_overlap_bed") > "$updated_cnv_annotated"

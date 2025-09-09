@@ -63,8 +63,8 @@ process sample_qc_report {
 
     input:
     val dataset_name                      // dataset_name, used in the report
-    path plink2samplemetadata_tsv   // Metadata: SampleID -> info (LRR_SD, BAF_SD, WF )
-    path penncnv_qc                 // QC table: SampleID -> QC metrics
+    path plink2samplemetadata_tsv   // Metadata: SampleID -> info (Call_Rate)
+    path penncnv_qc                 // QC table: SampleID -> QC metrics (LRR_SD, BAF_SD, WF )
     path sample_qc_rmd  // <- This is your .Rmd file
 
     output:

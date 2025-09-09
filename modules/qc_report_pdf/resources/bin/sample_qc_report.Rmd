@@ -9,12 +9,12 @@ params:
 ---
 <!-- 
 12/06/2025 By Florian Bénitière  
-Write a PDF automatic report based on a QC per sample TSV file containing columns: Sexe, Call_Rate, LRR_SD, BAF_SD, WF 
+Write a PDF automatic report based on a QC per sample TSV file containing columns: Sex, Call_Rate, LRR_SD, BAF_SD, WF 
 
 Rscript -e "rmarkdown::render('sample_qc_report.Rmd', params=list(
     dataset_name='$dataset_name',
     qc_input='$qc_input'),
-output_file='SPARK_PennCNV_raw_QC.pdf'
+output_file='sample_qc_report.pdf'
 )"
 -->
 
@@ -59,9 +59,14 @@ fail_counts <- qc_df %>%
     pass_all = sum(pass_all)
   )
 
-sex_summary <- qc_df %>%
-  count(Sexe) %>%
-  rename(Sex = Sexe, Count = n)
+# Count samples by Sex, handling missing column
+if("Sex" %in% colnames(qc_df)) {
+  sex_summary <- qc_df %>%
+    count(Sex) %>%
+    rename(Sex = Sex, Count = n)
+} else {
+  sex_summary <- tibble(Sex = "Unknown", Count = nrow(qc_df))
+}
 
 knitr::kable(sex_summary, caption = "Number of Samples by Sex")
 ```

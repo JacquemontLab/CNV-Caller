@@ -11,6 +11,7 @@ include { MERGE_CNV_CALLS        } from './modules/merge_dataset_CNV'
 include { REPORT_PDF       } from './modules/qc_report_pdf'
 
 
+
 process buildSummary {
     tag 'quick'
     
@@ -49,8 +50,6 @@ process buildSummary {
 
        Command:
        ${workflow.commandLine}
-
-    
     """
 
     stub:
@@ -58,6 +57,7 @@ process buildSummary {
     touch launch_report.txt
     """
 }
+
 
 
 process sexfile_from_plink2samplemetadata {
@@ -74,6 +74,8 @@ process sexfile_from_plink2samplemetadata {
     cut -f1,3 ${plink2samplemetadata_tsv} > 'sexfile.tsv'
     """
 }
+
+
 
 
 process trio_from_plink2samplemetadata {
@@ -106,21 +108,79 @@ process merge_sample_metadata {
     """
     duckdb -c "
     COPY (
-        SELECT a.*, b.* EXCLUDE SampleID
-        FROM read_csv_auto('${plink2samplemetadata_tsv}', sep='\t', header=true) a
-        JOIN read_csv_auto('${penncnv_qc}', sep='\t', header=true) b
-        USING (SampleID)
-    ) TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
+        SELECT 
+            CAST(b.SampleID AS VARCHAR) AS SampleID, 
+            b.* EXCLUDE SampleID,
+            a.* EXCLUDE SampleID
+        FROM read_csv_auto('$penncnv_qc', sep='\t', header=true) b
+        LEFT JOIN read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true) a
+        ON CAST(b.SampleID AS VARCHAR) = CAST(a.SampleID AS VARCHAR)
+    )  TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
     "
     """
 }
 
 
 
+
+process format_penncnv_raw {
+    tag "format PennCNV raw output"
+
+    input:
+    path penncnv_cnv_raw
+
+    output:
+    path "PennCNV_CNV.tsv",  emit: penncnv_cnv
+    path penncnv_cnv_raw,  emit: penncnv_cnv_raw
+
+    script:
+    """
+    # Remove quotes from input files
+    sed 's/"//g' "$penncnv_cnv_raw" > pc_no_quotes.txt
+
+    format_penncnv_cnv.sh "pc_no_quotes.txt" "PennCNV_CNV.tsv"
+    """
+}
+
+
+process format_quantisnp_raw {
+    tag "format QuantiSNP raw output"
+
+    input:
+    path quantisnp_cnv_raw
+
+    output:
+    path "QuantiSNP_CNV.tsv",  emit: quantisnp_cnv
+    path quantisnp_cnv_raw,  emit: quantisnp_cnv_raw
+
+    script:
+    """
+    # Remove quotes from input files
+    sed 's/"//g' "$quantisnp_cnv_raw" > qs_no_quotes.txt
+
+    format_quantisnp_cnv.sh "qs_no_quotes.txt" "QuantiSNP_CNV.tsv"
+    """
+}
+
+process copy_qc_input {
+    tag "copy PennCNV QC"
+
+    input:
+    path penncnv_qc
+
+    output:
+    path penncnv_qc
+
+    script:
+    """
+    """
+}
+
 workflow {
     
     main:
     // Inputs from params
+    pipeline_mode    = params.pipeline_mode
     penncnv_qc_path    = params.penncnv_qc_path
     penncnv_calls_path    = params.penncnv_calls_path
     quantisnp_calls_path  = params.quantisnp_calls_path
@@ -131,17 +191,10 @@ workflow {
     batch_size = params.batch_size
     dataset_name = params.dataset_name
     
-    
-    if (plink2samplemetadata_tsv) {
 
+    if (pipeline_mode == "pipeline_full"){
         sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
-        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
 
-    }
-    
-    has_input_calls = penncnv_calls_path && quantisnp_calls_path
-
-    if ( ! has_input_calls ) {
         '''
         PREPARE INPUTS for PennCNV
         '''
@@ -160,44 +213,63 @@ workflow {
                             genome_version,
                             batch_size )
         
+        // Collect outputs
         penncnv_cnv_raw = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
         quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
 
+        penncnv_cnv      = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
+        quantisnp_cnv    = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
+
         penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
 
-    } else {
-        penncnv_cnv_raw   = Channel.fromPath(penncnv_calls_path)
-        quantisnp_cnv_raw = Channel.fromPath(quantisnp_calls_path)
-        penncnv_qc = Channel.fromPath(penncnv_qc_path)
+    } else if (pipeline_mode == "pipeline_partial") {
+        penncnv_ch = format_penncnv_raw(Channel.fromPath(penncnv_calls_path))
+        quantisnp_ch = format_quantisnp_raw(Channel.fromPath(quantisnp_calls_path))
+
+        // Load precomputed CNV calls
+        penncnv_cnv_raw   = penncnv_ch.penncnv_cnv_raw
+        quantisnp_cnv_raw = quantisnp_ch.quantisnp_cnv_raw
+
+        penncnv_cnv = penncnv_ch.penncnv_cnv
+        quantisnp_cnv = quantisnp_ch.quantisnp_cnv
+
+        // Only load QC channel if the path exists
+        if (file(penncnv_qc_path).exists()) {
+            penncnv_qc = copy_qc_input(Channel.fromPath(penncnv_qc_path))
+        }
     }
 
     '''
     PREFILTERING - MERGING
     '''
     MERGE_CNV_CALLS (
-                        quantisnp_cnv_raw,
-                        penncnv_cnv_raw,
+                        quantisnp_cnv,
+                        penncnv_cnv,
                         file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
                         genome_version
                      )
 
-
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
 
-
-    merge_sample_metadata ( plink2samplemetadata_tsv , penncnv_qc )
-
+    // Merge sample metadata only if QC channel exists and metadata file is provided
+    if (pipeline_mode == "pipeline_full" ) {
+        merge_sample_metadata(plink2samplemetadata_tsv, penncnv_qc)
+    } else if (pipeline_mode == "pipeline_partial" && file(penncnv_qc_path).exists() && plink2samplemetadata_tsv) {
+        merge_sample_metadata(plink2samplemetadata_tsv, penncnv_qc)
+    }
 
     // Run report only if requested
     if (params.report) {
-        REPORT_PDF ( 
+        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
+
+        REPORT_PDF (
             dataset_name,
             plink2samplemetadata_tsv,
             trio_file,
             penncnv_qc,
             penncnv_cnv_raw,
             quantisnp_cnv_raw,
-            merged_cnv) 
+            merged_cnv )
     }
 
     '''
@@ -213,14 +285,14 @@ workflow {
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-    sampleDB = merge_sample_metadata.out
+    sampleDB = merge_sample_metadata.out ?: Channel.empty()
 
     // Before filter results
-    penncnv_qc       = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_qc_ch : Channel.empty()
-    penncnv_cnv      = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_ch : Channel.empty()
-    penncnv_cnv_raw  = !has_input_calls ? CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch : penncnv_cnv_raw
-    quantisnp_cnv    = !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_ch : Channel.empty()
-    quantisnp_cnv_raw= !has_input_calls ? CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch : quantisnp_cnv_raw
+    penncnv_qc = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())
+    penncnv_cnv_raw = penncnv_cnv_raw
+    penncnv_cnv      = penncnv_cnv
+    quantisnp_cnv_raw = quantisnp_cnv_raw
+    quantisnp_cnv    = quantisnp_cnv
 
     // REPORT outputs only if report was run
     penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : Channel.empty()

@@ -107,7 +107,7 @@ child_cnv <- child_cnv %>% mutate(length_bin = cut(Length, breaks = breaks, labe
 
 \vspace{1cm}
 
-```{r , echo=FALSE, fig.width=11, fig.height=13}
+```{r , echo=FALSE, fig.width=11, fig.height=12}
 suppressWarnings({
   
   plot_list <- list()
