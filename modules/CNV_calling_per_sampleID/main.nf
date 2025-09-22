@@ -63,12 +63,13 @@ workflow  CALL_CNV_PARALLEL {
     gc_content_windows  //gc model from resources
     sexfile             //plink data extracted using extract_plink_data
     gcDir               //resource directory pointing to per-chromosome 1k binned gc content regions
-    batch_size
+    batch_size          //number of samples to run on a single node
+    test_batch_num      //number of batches to test
 
     main:
 
     //Splitting into groups by splitting csv sample file
-    batch_ch = list_baflrr_path.splitCsv(by : batch_size).take( 1 )            //debug, take first 2 batches
+    batch_ch = list_baflrr_path.splitCsv(by : batch_size).take( test_batch_num )
     
 
     //Calling CNVs    

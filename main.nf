@@ -166,6 +166,7 @@ params.plink2samplemetadata_tsv = ""
 params.genome_version           = "GRCh38"
 params.batch_size               = 64
 params.pfb_sample_size          = 1000
+params.test_batch_num           = -1
 
 workflow {
     
@@ -190,12 +191,13 @@ workflow {
         CALLING CNVs AND MERGE
         '''
         CALL_CNV_PARALLEL     ( list_sample_baflrrpath.splitCsv(sep: "\t")
-                                    .map {row -> row[1]}.collectFile(newLine: true),   //File of paths to baf_lrr files without the sampleID
-                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                    //PFB file
-                                PREPARE_PENNCNV_INPUTS.out.gc_model,                    //GC model
-                                extractPlink(params.plink2samplemetadata_tsv).sexfile,         //Sexfile from metadata input
-                                params.genome_version,                                         //GRCh37 or 38
-                                params.batch_size                                          )   //Variable batch size to run samples in parallel
+                                    .map {row -> row[1]}.collectFile(newLine: true),            //File of paths to baf_lrr files without the sampleID
+                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                            //PFB file
+                                PREPARE_PENNCNV_INPUTS.out.gc_model,                            //GC model
+                                extractPlink(params.plink2samplemetadata_tsv).sexfile,          //Sexfile from metadata input
+                                params.genome_version,                                          //GRCh37 or 38
+                                params.batch_size,                                              //Variable batch size to run samples in parallel
+                                params.test_batch_num                                          )//number of batches to run in parallel, default -1 runs all   
         
         // Collect outputs
         penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
