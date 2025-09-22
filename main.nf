@@ -8,7 +8,7 @@ nextflow.enable.moduleBinaries = true
 include { PREPARE_PENNCNV_INPUTS } from './modules/generate_penncnv_params'
 include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
 include { MERGE_CNV_CALLS        } from './modules/merge_dataset_CNV'
-include { REPORT_PDF       } from './modules/qc_report_pdf'
+include { REPORT_PDF             } from './modules/qc_report_pdf'
 
 
 
@@ -58,39 +58,20 @@ process buildSummary {
     """
 }
 
-
-
-process sexfile_from_plink2samplemetadata {
-    tag "generate sexfile from plink2samplemetadata"
-
+process extractPlink {
     input:
     path plink2samplemetadata_tsv
 
     output:
-    path 'sexfile.tsv'
+    path 'sexfile.tsv', emit: sexfile
+    path 'trio.tsv', emit: triofile
 
     script:
     """
     cut -f1,3 ${plink2samplemetadata_tsv} > 'sexfile.tsv'
-    """
-}
-
-
-
-
-process trio_from_plink2samplemetadata {
-    tag "generate trio file from plink2samplemetadata"
-
-    input:
-    path plink2samplemetadata_tsv
-
-    output:
-    path 'trio.tsv'
-
-    script:
-    """
     cut -f1,4,5 ${plink2samplemetadata_tsv} > 'trio.tsv'
     """
+
 }
 
 
@@ -119,6 +100,7 @@ process merge_sample_metadata {
     "
     """
 }
+
 
 
 
@@ -163,7 +145,6 @@ process format_quantisnp_raw {
 }
 
 process copy_qc_input {
-    tag "copy PennCNV QC"
 
     input:
     path penncnv_qc
@@ -176,55 +157,61 @@ process copy_qc_input {
     """
 }
 
+//Default params
+params.pipeline_mode            = "full"
+params.penncnv_qc_path          = ""
+params.penncnv_calls_path       = ""
+params.quantisnp_calls_path     = ""
+params.plink2samplemetadata_tsv = ""
+params.genome_version           = "GRCh38"
+params.batch_size               = 64
+params.pfb_sample_size          = 1000
+
 workflow {
     
     main:
-    // Inputs from params
-    pipeline_mode    = params.pipeline_mode
-    penncnv_qc_path    = params.penncnv_qc_path
-    penncnv_calls_path    = params.penncnv_calls_path
-    quantisnp_calls_path  = params.quantisnp_calls_path
-    list_sample_baflrrpath = params.list_sample_baflrrpath
-    list_baflrr_path = params.list_baflrr_path
-    plink2samplemetadata_tsv = params.plink2samplemetadata_tsv
-    genome_version = params.genome_version
-    batch_size = params.batch_size
-    dataset_name = params.dataset_name
+    list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
+    
     
 
-    if (pipeline_mode == "pipeline_full"){
-        sex_file = sexfile_from_plink2samplemetadata(plink2samplemetadata_tsv)
+    if (params.pipeline_mode == "full"){
+        
 
         '''
         PREPARE INPUTS for PennCNV
         '''
         // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
         PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
-                                plink2samplemetadata_tsv,
-                                file("${projectDir}/resources/GC_correction/${genome_version}/gc_content_1k_windows.bed"))
+                                params.plink2samplemetadata_tsv,
+                                file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
+                                params.pfb_sample_size)
 
         '''
         CALLING CNVs AND MERGE
         '''
-        CALL_CNV_PARALLEL    ( Channel.fromPath(list_baflrr_path),
-                            PREPARE_PENNCNV_INPUTS.out.pfb_file, 
-                            PREPARE_PENNCNV_INPUTS.out.gc_model,
-                            sex_file,
-                            genome_version,
-                            batch_size )
+        CALL_CNV_PARALLEL     ( list_sample_baflrrpath.splitCsv(sep: "\t")
+                                    .map {row -> row[1]}.collectFile(newLine: true),   //File of paths to baf_lrr files without the sampleID
+                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                    //PFB file
+                                PREPARE_PENNCNV_INPUTS.out.gc_model,                    //GC model
+                                extractPlink(params.plink2samplemetadata_tsv).sexfile,         //Sexfile from metadata input
+                                params.genome_version,                                         //GRCh37 or 38
+                                params.batch_size                                          )   //Variable batch size to run samples in parallel
         
         // Collect outputs
-        penncnv_cnv_raw = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
-        quantisnp_cnv_raw = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
+        penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
+        quantisnp_cnv_raw   = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
 
-        penncnv_cnv      = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
-        quantisnp_cnv    = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
+        penncnv_cnv         = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
+        quantisnp_cnv       = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
 
-        penncnv_qc = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+        penncnv_qc          = CALL_CNV_PARALLEL.out.penncnv_qc_ch
 
-    } else if (pipeline_mode == "pipeline_partial") {
-        penncnv_ch = format_penncnv_raw(Channel.fromPath(penncnv_calls_path))
-        quantisnp_ch = format_quantisnp_raw(Channel.fromPath(quantisnp_calls_path))
+    
+    
+    } else if (params.pipeline_mode == "partial") {
+        
+        penncnv_ch    = format_penncnv_raw(Channel.fromPath(params.penncnv_calls_path))
+        quantisnp_ch  = format_quantisnp_raw(Channel.fromPath(params.quantisnp_calls_path))
 
         // Load precomputed CNV calls
         penncnv_cnv_raw   = penncnv_ch.penncnv_cnv_raw
@@ -234,50 +221,48 @@ workflow {
         quantisnp_cnv = quantisnp_ch.quantisnp_cnv
 
         // Only load QC channel if the path exists
-        if (file(penncnv_qc_path).exists()) {
-            penncnv_qc = copy_qc_input(Channel.fromPath(penncnv_qc_path))
+        if (file(params.penncnv_qc_path).exists()) {
+            penncnv_qc = copy_qc_input(Channel.fromPath(params.penncnv_qc_path))
         }
     }
 
     '''
     PREFILTERING - MERGING
     '''
-    MERGE_CNV_CALLS (
-                        quantisnp_cnv,
+    MERGE_CNV_CALLS (   quantisnp_cnv,                                                             
                         penncnv_cnv,
                         file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
-                        genome_version
+                        params.genome_version
                      )
 
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
 
     // Merge sample metadata only if QC channel exists and metadata file is provided
-    if (pipeline_mode == "pipeline_full" ) {
-        merge_sample_metadata(plink2samplemetadata_tsv, penncnv_qc)
-    } else if (pipeline_mode == "pipeline_partial" && file(penncnv_qc_path).exists() && plink2samplemetadata_tsv) {
-        merge_sample_metadata(plink2samplemetadata_tsv, penncnv_qc)
+    if (params.pipeline_mode == "full" ) {
+        merge_sample_metadata(params.plink2samplemetadata_tsv, penncnv_qc)
+    } else if (params.pipeline_mode == "partial" && file(params.penncnv_qc_path).exists() && params.plink2samplemetadata_tsv) {
+        merge_sample_metadata(params.plink2samplemetadata_tsv, penncnv_qc)
     }
 
     // Run report only if requested
     if (params.report) {
-        trio_file = trio_from_plink2samplemetadata(plink2samplemetadata_tsv)
+        trio_file = extractPlink(params.plink2samplemetadata_tsv).triofile
 
-        REPORT_PDF (
-            dataset_name,
-            plink2samplemetadata_tsv,
-            trio_file,
-            penncnv_qc,
-            penncnv_cnv_raw,
-            quantisnp_cnv_raw,
-            merged_cnv )
+        REPORT_PDF (    params.dataset_name,
+                        params.plink2samplemetadata_tsv,
+                        trio_file,
+                        penncnv_qc,
+                        penncnv_cnv_raw,
+                        quantisnp_cnv_raw,
+                        merged_cnv                     )
     }
 
     '''
     SUMMARY BUILDER
     '''
-    // Always run summary builder (change if you want this conditional too)
-    buildSummary  ( dataset_name,
-                    genome_version,
+    
+    buildSummary  ( params.dataset_name,
+                    params.genome_version,
                     params.report ? REPORT_PDF.out.merged_cnv_qc : merged_cnv )
 
 
@@ -285,14 +270,14 @@ workflow {
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-    sampleDB = merge_sample_metadata.out ?: Channel.empty()
+    sampleDB   = merge_sample_metadata.out ?: Channel.empty()
 
     // Before filter results
-    penncnv_qc = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())
-    penncnv_cnv_raw = penncnv_cnv_raw
-    penncnv_cnv      = penncnv_cnv
+    penncnv_qc        = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())
+    penncnv_cnv_raw   = penncnv_cnv_raw
+    penncnv_cnv       = penncnv_cnv
     quantisnp_cnv_raw = quantisnp_cnv_raw
-    quantisnp_cnv    = quantisnp_cnv
+    quantisnp_cnv     = quantisnp_cnv
 
     // REPORT outputs only if report was run
     penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : Channel.empty()

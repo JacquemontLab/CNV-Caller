@@ -29,6 +29,7 @@ import duckdb
 import sys
 import os
 import psutil
+import logging
 
 def main():
     if len(sys.argv) < 2:
@@ -44,7 +45,7 @@ def main():
         memory_limit = sys.argv[3]
     else:
         # Get 90% of total available system memory in bytes
-        available_mem_bytes = psutil.virtual_memory().available
+        available_mem_bytes = psutil.virtual_memory().available ###!!broken!! 
         memory_limit_bytes = int(available_mem_bytes * 0.9)
 
         # Convert to gigabytes and format as a string for DuckDB
@@ -72,29 +73,39 @@ def main():
                               has_header=False,
                               skip_rows=1,
                               new_columns=["Name","Chr","Position","LRR", "BAF"],
-                              schema_overrides=[pl.String, pl.String, pl.Int32, pl.Float32, pl.Float32])
+                              schema_overrides=[pl.String, pl.Categorical, pl.Int64, pl.Float64, pl.Float64])
                               .drop_nans()
-                              .sink_parquet("compiled_1k.parquet"))
-    print("Built Parquet")
+                              .sink_parquet(pl.PartitionMaxSize(
+                                                "./pfb_parquet/",
+                                                max_size = 10_000_000
+                                                ),
+                                            mkdir = True,
+                                            maintain_order = False, 
+                                            compression = 'snappy',
+                                            row_group_size = 2_500_000))
+    logging.info("Parquet built")
 
     #Execute groupby, taking the average BAF per group of SNPs across samples
     duckdb.sql(
         f"""
         SET memory_limit = '{memory_limit}';
-        COPY (
-            SELECT 
-                Name,
-                Chr,
-                Position,
-                ROUND(SUM(BAF) / COUNT(BAF), 3) AS PFB
-            FROM read_parquet('compiled_1k.parquet')
-            GROUP BY Name, Chr, Position
-        ) TO '{output}' (FORMAT 'csv', DELIMITER '\t', HEADER)
+        SET preserve_insertion_order = false;
+        SET temp_directory = './tmp_dir.tmp/';
+
+            COPY (
+                SELECT 
+                    Name,
+                    Chr,
+                    Position,
+                    ROUND(AVG(BAF), 3) AS PFB
+                FROM read_parquet('pfb_parquet/*.parquet', hive_partitioning = true)
+                GROUP BY Chr, Position, Name
+            ) TO '{output}' (FORMAT 'csv', DELIMITER '\t', HEADER)
         """
     )
 
     #cleanup
-    os.remove("compiled_1k.parquet")
+    #os.remove("compiled_baf.parquet")
 
 if __name__ == "__main__":
     main()

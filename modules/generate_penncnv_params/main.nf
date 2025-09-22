@@ -42,12 +42,13 @@ nextflow.enable.dsl=2
 
 
 // Step 2: Select the 1000 samples with the highest call rate
-process identify_1000_best_sampleid {
-    tag "identify_1000_best_sampleid"
+process getBestSample {
+    tag "get ${pfb_sample_size} best samples"
 
     input:
-    path plink2samplemetadata_output                  // File with sample ID, call rate, and imputed sex
-    path list_path_to_BAF_LRR_Probes     // TSV file mapping SampleID to full path
+    path plink2samplemetadata_output    // File with sample ID, call rate, and imputed sex
+    path list_path_to_BAF_LRR_Probes    // TSV file mapping SampleID to full path
+    val pfb_sample_size     
 
     output:
     path "list_best_BAF_LRR_Probes.txt" // List of paths to top 1000 sample files
@@ -56,12 +57,12 @@ process identify_1000_best_sampleid {
     """
     echo "Process Running: identify_1000_best_sampleid"
  
-    # Extract top 1000 samples by call rate (assumed to be column 2), skipping header
+    # Extract top samples by call rate (assumed to be column 2), skipping header
     tail -n +2 "$plink2samplemetadata_output" | 
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' $list_path_to_BAF_LRR_Probes - | 
-    sort -k2,2nr | cut -f1 | head -n 1000 > SampleID_list
+    sort -k2,2nr | cut -f1 | head -n ${pfb_sample_size} > SampleID_list
     
-    # Filter original file list to keep only those 1000 samples
+    # Filter original file list to keep only the above samples
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' SampleID_list $list_path_to_BAF_LRR_Probes | cut -f2 > list_best_BAF_LRR_Probes.txt
 
     # Compare the list of expected sample IDs with actual ones found (for QC/debugging)
@@ -82,7 +83,7 @@ process generate_pfb {
 
     script:
     """
-    compile_pfb.py  ${list_best_BAF_LRR_Probes} pfb.tsv 200GB
+    compile_pfb.py  ${list_best_BAF_LRR_Probes} pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
     """
     }
 
@@ -94,7 +95,6 @@ process generate_pfb {
 process generate_gcmodel {
     tag "generate_gcmodel"
 
-    executor "local"
 
     input:
     path gc_content_windows // GC content by genomic window (e.g., from precomputed genome-wide scan)
@@ -115,6 +115,13 @@ process generate_gcmodel {
 
     # Intersect SNPs with genomic windows and compute GC content for each SNP position
     bedtools intersect -a SNP.bed -b "$gc_content_windows" -loj | awk -v OFS="\\t" '{print \$4,\$1,\$2,(\$8*100)}' >> 'gcModel.tsv'
+
+    linecount=\$(wc -l < gcModel.tsv)
+
+    if [ "\$linecount" -le 1 ]; then
+        echo "ERROR: gcModel is an empty file. Halting execution." >&2
+        exit 1
+    fi
     """
 }
 
@@ -126,6 +133,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         list_path_to_BAF_LRR
         plink2samplemetadata_output
         gc_content_windows
+        pfb_sample_size
 
         
     main:
@@ -134,14 +142,15 @@ workflow PREPARE_PENNCNV_INPUTS {
         // path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
 
         // Step 2. Identify the top 1000 samples by call rate.
-        identify_1000_best_sampleid(
+        getBestSample(
             plink2samplemetadata_output,
-            list_path_to_BAF_LRR
+            list_path_to_BAF_LRR,
+            pfb_sample_size
         )
 
         // Step 3. Generate a PFB file.
         pfb_file = generate_pfb(
-            identify_1000_best_sampleid.out
+            getBestSample.out
         )
 
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.

@@ -104,7 +104,7 @@ sexfile_temp=$(mktemp)
 zgrep -P "${sample_id}\t" ${sex_file} | cut -f1,2 > ${sexfile_temp}
 gender=$(cut -f2 ${sexfile_temp} | tr '[:upper:]' '[:lower:]')
 if [[ -z "$gender" ]]; then
-    echo "ERROR: No gender information found for sample ID ${sample_id}."
+    log_step "ERROR: No gender information found for sample ID ${sample_id}."
     exit 1
 fi
 

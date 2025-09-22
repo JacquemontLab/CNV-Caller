@@ -21,13 +21,13 @@ process callBatchCNVs {
     val genome_version
 
     output:
-    path "*.penncnv.qc",   emit: penncnv_qc_raw
-    path "*.PennCNV_QC.tsv", emit: penncnv_qc
-    path "*.penncnv.cnv",   emit: penncnv_cnv_raw
+    path "*.penncnv.qc",        emit: penncnv_qc_raw
+    path "*.PennCNV_QC.tsv",    emit: penncnv_qc
+    path "*.penncnv.cnv",       emit: penncnv_cnv_raw
     path "*.penncnv.cnv.tsv",   emit: penncnv_cnv
-    path "*.quantisnp.cnv", emit: quantisnp_cnv_raw
+    path "*.quantisnp.cnv",     emit: quantisnp_cnv_raw
     path "*.quantisnp.cnv.tsv", emit: quantisnp_cnv
-    path "batch_list.txt",  emit: batch_list
+    path "batch_list.txt",      emit: batch_list
 
     script:
     """
@@ -50,7 +50,8 @@ process callBatchCNVs {
                     --levels \$levels \
                     --config \$config \
                     --chr \$chr \
-                    --mode taskset
+                    --mode taskset \
+                    --cpus ${task.cpus}
     """
 }
 
@@ -67,8 +68,7 @@ workflow  CALL_CNV_PARALLEL {
     main:
 
     //Splitting into groups by splitting csv sample file
-    batch_ch = list_baflrr_path.splitCsv(by : batch_size)    //batch size
-                    // .take( 10 )            //debug, take first 2 batches
+    batch_ch = list_baflrr_path.splitCsv(by : batch_size).take( 1 )            //debug, take first 2 batches
     
 
     //Calling CNVs    
@@ -81,13 +81,13 @@ workflow  CALL_CNV_PARALLEL {
     // Collect merged QC outputs
     penncnv_qc_ch = callBatchCNVs.out.penncnv_qc
         .flatten()
-        .collectFile(keepHeader: true, 
-                    name: "PennCNV_QC.tsv")
+        .collectFile( keepHeader: true, 
+                      name      : "PennCNV_QC.tsv")
 
     penncnv_cnv_ch = callBatchCNVs.out.penncnv_cnv
         .flatten()
         .collectFile( keepHeader : true, 
-                    name       : "PennCNV_CNV.tsv")
+                      name       : "PennCNV_CNV.tsv")
 
     // Collect merged raw PennCNV outputs
     penncnv_cnv_raw_ch = callBatchCNVs.out.penncnv_cnv_raw
