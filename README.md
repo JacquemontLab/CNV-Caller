@@ -195,7 +195,7 @@ A pre-filtering step was applied to each CNV call set independently to exclude l
 
 CNVs from both tools were then merged to generate a unified CNV set. For each CNV, we calculated the fraction of support across the two algorithms (**Two\_Algorithm\_Overlap**). The CNV **Type** was inferred based on the copy number values within each unified CNV region: regions with all values \≥2 were labeled duplications ("DUP"), all values <2 as deletions ("DEL"), and regions with mixed values as mixed ("MIX").
 
-We next assessed the overlap of each CNV with **Problematic Regions** defined by the UCSC Genome Browser ([UCSC Track: Problematic Regions GRCh37](https://genome.ucsc.edu/cgi-bin/hgTrackUi?db=hg19&g=problematic) and [GRCh38](https://genome.ucsc.edu/cgi-bin/hgTrackUi?db=hg38&g=problematic)).
+We next assessed the overlap of each CNV with **problematic regions**. These regions were compiled from the UCSC Genome Browser ([hgTables](https://genome.ucsc.edu/cgi-bin/hgTables)) and include segmental duplications, the major histocompatibility complex, centromeres, telomeres, and the UCSC Problematic Regions tracks.
 
 
 ## Filtering Recommendations
@@ -203,7 +203,7 @@ We next assessed the overlap of each CNV with **Problematic Regions** defined by
 For downstream analyses, we recommend filtering the final CNV set using the following criteria (based on results from the SPARK cohort; see `resources/docs/SPARK_CNV_dataset_report.pdf`):
 
 * **Two\_Algorithm\_Overlap \≥ 0.5** (validated by at least 50% overlap between both algorithms)
-* **ProblematicRegions\_Overlap < 0.5** (less than 50% overlap with UCSC-flagged problematic regions)
+* **ProblematicRegions\_Overlap < 0.5** (less than 50% overlap with problematic regions)
 * **Type == DEL or DUP** (only CNVs with an unambiguous type)
 
 The **Confidence\_max** can also be used as the **Copy\_Number**, but based on our results we do not recommend adding this complexity to the method.
@@ -219,7 +219,7 @@ The quality filters used were:
 * **BAF drift < 0.01**
 * **Waviness factor between −0.05 and 0.05**
 
-In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we also recommend applying:
+In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we recommend applying a filter on the call rate, although the threshold may be adjusted depending on the cohort:
 
 * **Call Rate \≥ 0.98**
 
@@ -241,7 +241,7 @@ In addition, based on common practice in CNV detection studies (e.g., PennCNV an
 | **QuantiSNP\_Overlap**          | Fraction of the CNV region overlapping QuantiSNP calls.            |
 | **PennCNV\_Overlap**            | Fraction of the CNV region overlapping PennCNV calls.            |
 | **Two\_Algorithm\_Overlap**     | Fraction of the CNV region supported by both QuantiSNP and PennCNV.            |
-| **ProblematicRegions\_Overlap** | Overlap with genomic regions flagged as problematic (e.g., low complexity, centromeres, telomeres, segmental duplications, all collected from UCSC Genome Browser resources).|
+| **ProblematicRegions\_Overlap** | Overlap with problematic regions (Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and UCSC Problematic Regions), compiled from the UCSC Genome Browser (hgTables), for more details see section 'Problematic Regions'.|
 
 
 ## Content of the dataset **sampleDB.tsv** if produced
@@ -282,7 +282,15 @@ In addition, based on common practice in CNV detection studies (e.g., PennCNV an
   - `sampleDB.tsv` : **Sample database** containing metadata and QC status for all genotyped individuals.
 
 
-## Current Limitations of the pipeline
+## Notes
+
+### Problematic Regions
+
+This region regroups multiple tables from UCSC: Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and Problematic Regions from UCSC.
+For details, please refer to the file CNV-Caller/resources/Genome_Regions/README.md 
+
+
+### Current Limitations of the pipeline
 
 - For PennCNV, default files such as **hhall.hmm** or **wgs.hmm** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.2):
 [Git PennCNV](https://github.com/WGLab/PennCNV)
