@@ -92,60 +92,26 @@ workflow  CALL_CNV_PARALLEL {
     pfb                 //pfb file generated from prepare_penncnv_params
     gc_content_windows  //gc model from resources
     sexfile             //plink data extracted using extract_plink_data
-    gcDir               //resource directory pointing to per-chromosome 1k binned gc content regions
-    batch_size          //number of samples to run on a single node
-    test_batch_num      //number of batches to test
+    genome_version               //resource directory pointing to per-chromosome 1k binned gc content regions
     autosome_only       //boolean for skipping x-chromosome calling
 
     main:
 
-    //Splitting into groups by splitting csv sample file
-    batch_ch = list_baflrr_path.splitCsv(by : batch_size).take( test_batch_num )
     
-
-    //Calling CNVs    
-    callBatchCNVs ( batch_ch, 
+    callBatchCNVs ( list_baflrr_path, 
                     pfb,
                     gc_content_windows,
                     sexfile,
-                    gcDir,
+                    genome_version,
                     autosome_only               )
 
-    // Collect merged QC outputs
-    penncnv_qc_ch = callBatchCNVs.out.penncnv_qc
-        .flatten()
-        .collectFile( keepHeader: true, 
-                      name      : "PennCNV_QC.tsv")
-
-    penncnv_cnv_ch = callBatchCNVs.out.penncnv_cnv
-        .flatten()
-        .collectFile( keepHeader : true, 
-                      name       : "PennCNV_CNV.tsv")
-
-    // Collect merged raw PennCNV outputs
-    penncnv_cnv_raw_ch = callBatchCNVs.out.penncnv_cnv_raw
-        .flatten()
-        .collectFile(keepHeader: false, 
-                    name: "PennCNV_raw_calls.txt")
-
-    // Collect merged QuantiSNP CNV outputs
-    quantisnp_cnv_ch = callBatchCNVs.out.quantisnp_cnv
-        .flatten()
-        .collectFile(keepHeader: true, 
-                    name: "QuantiSNP_CNV.tsv")
-
-    // Collect merged raw QuantiSNP outputs
-    quantisnp_cnv_raw_ch = callBatchCNVs.out.quantisnp_cnv_raw
-        .flatten()
-        .collectFile(keepHeader: true, 
-                    name: "QuantiSNP_raw_calls.txt")
 
                     
     emit:
-        penncnv_qc_ch
-        penncnv_cnv_ch
-        penncnv_cnv_raw_ch
-        quantisnp_cnv_ch
-        quantisnp_cnv_raw_ch
+        penncnv_qc_ch        = callBatchCNVs.out.penncnv_qc
+        penncnv_cnv_ch       = callBatchCNVs.out.penncnv_cnv
+        penncnv_cnv_raw_ch   = callBatchCNVs.out.penncnv_cnv_raw
+        quantisnp_cnv_ch     = callBatchCNVs.out.quantisnp_cnv
+        quantisnp_cnv_raw_ch = callBatchCNVs.out.quantisnp_cnv_raw
     
 }

@@ -176,7 +176,11 @@ workflow {
     
     main:
     list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
-    
+    batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t")                           
+                                     .map {row -> row[1]}                            //grab filepaths 
+                                     .collectFile(newLine: true)                     //make new file of just paths
+                                     .splitCsv(by : params.batch_size)               //split file into list of batch size
+                                     .take (params.test_batch_num)                   //take only first few batches if not default -1   
     
 
     if (params.pipeline_mode == "full"){
@@ -185,7 +189,7 @@ workflow {
         '''
         PREPARE INPUTS for PennCNV
         '''
-        // PREPARE_PENNCNV_INPUTS ( first_sample.getParent(),
+       
         PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
                                 params.plink2samplemetadata_tsv,
                                 file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
@@ -194,24 +198,37 @@ workflow {
         '''
         CALLING CNVs AND MERGE
         '''
-        CALL_CNV_PARALLEL     ( list_sample_baflrrpath.splitCsv(sep: "\t")
-                                    .map {row -> row[1]}.collectFile(newLine: true),            //File of paths to baf_lrr files without the sampleID
-                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                            //PFB file
-                                PREPARE_PENNCNV_INPUTS.out.gc_model,                            //GC model
-                                extractPlink(params.plink2samplemetadata_tsv).sexfile,          //Sexfile from metadata input
-                                params.genome_version,                                          //GRCh37 or 38
-                                params.batch_size,                                              //number of samples to run in a batch
-                                params.test_batch_num,                                          //number of batches to run in parallel, default -1 runs all
-                                params.autosome_only                                          ) //for skipping x-chromosome calling  
+        CALL_CNV_PARALLEL     ( batch_ch,                                                               //File of paths to baf_lrr files without the sampleID
+                                PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            //PFB file, passing into value channel using first()
+                                PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            //GC model
+                                extractPlink(params.plink2samplemetadata_tsv).sexfile.first(),          //Sexfile from metadata input 
+                                params.genome_version,                                                  //genome version for choosing gc content directory                
+                                params.autosome_only                                          )         //for skipping x-chromosome calling  
         
         // Collect outputs
         penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
-        quantisnp_cnv_raw   = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
+                                                    .flatten()
+                                                    .collectFile(keepHeader : true,
+                                                                 name       :"PennCNV_raw_calls.txt")
 
-        penncnv_cnv         = CALL_CNV_PARALLEL.out.penncnv_cnv_ch
-        quantisnp_cnv       = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch
+        quantisnp_cnv_raw   = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
+                                                   .flatten()
+                                                   .collectFile(keepHeader : true,
+                                                                name       :"QuantiSNP_raw_calls.txt")
+
+        penncnv_cnv         = CALL_CNV_PARALLEL.out.penncnv_cnv_ch                                                   
+                                                   .flatten()
+                                                   .collectFile(keepHeader : true,
+                                                                name       :"PennCNV_CNV.tsv")
+        quantisnp_cnv       = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch                                                   
+                                                   .flatten()
+                                                   .collectFile(keepHeader : true,
+                                                                name       :"QuantiSNP_CNV.tsv")
 
         penncnv_qc          = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+                                                   .flatten()
+                                                   .collectFile(keepHeader : true,
+                                                                name       :"PennCNV_QC.tsv")
 
     
     
