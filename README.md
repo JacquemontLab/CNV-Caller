@@ -49,7 +49,6 @@ SampleID  path_to_BAF_LRR
 
 > The BAF/LRR file name should follow the format: **{SampleID}.BAF\_LRR.tsv**.
 
-* **list\_baflrr\_path**: A TXT file containing paths to BAF/LRR files (essentially the second column of the previous file, e.g., `cut -f2`).
 * **batch\_size**: Number of batches to process.
 
 ⚠️ Be careful with the `.hmm` file used by PennCNV in the **callBatchCNVs** process.

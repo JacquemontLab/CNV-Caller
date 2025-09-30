@@ -19,6 +19,7 @@ process callBatchCNVs {
     path gcmodel_file
     path sexfile
     val genome_version
+    val autosome_only
 
     output:
     path "*.penncnv.qc",        emit: penncnv_qc_raw
@@ -30,6 +31,33 @@ process callBatchCNVs {
     path "batch_list.txt",      emit: batch_list
 
     script:
+    if(autosome_only){
+    
+    """
+    # Turn the nextflow variable into lines of a file
+    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
+
+    # Default parameters avalable in the docker:
+    chr="1:23"
+    gcdir=/usr/local/QuantiSNP-2.3/GC_correction/${genome_version}/GCdir/
+    hmm_file="/usr/local/PennCNV-1.0.5/lib/wgs.hmm"
+    levels="/usr/local/QuantiSNP-2.3/bin/config/levels.dat"
+    config="/usr/local/QuantiSNP-2.3/bin/config/params.dat"
+
+    batch_cnv_call.sh --batch_list batch_list.txt \
+                    --autosome_only \
+                    --sexfile ${sexfile} \
+                    --pfb ${pfb_file} \
+                    --gcmodel ${gcmodel_file} \
+                    --gcdir \$gcdir \
+                    --hmm_file \$hmm_file \
+                    --levels \$levels \
+                    --config \$config \
+                    --chr \$chr \
+                    --mode taskset \
+                    --cpus ${task.cpus}
+    """
+    } else {
     """
     # Turn the nextflow variable into lines of a file
     echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
@@ -53,6 +81,8 @@ process callBatchCNVs {
                     --mode taskset \
                     --cpus ${task.cpus}
     """
+
+    }
 }
 
 
@@ -65,6 +95,7 @@ workflow  CALL_CNV_PARALLEL {
     gcDir               //resource directory pointing to per-chromosome 1k binned gc content regions
     batch_size          //number of samples to run on a single node
     test_batch_num      //number of batches to test
+    autosome_only       //boolean for skipping x-chromosome calling
 
     main:
 
@@ -77,7 +108,8 @@ workflow  CALL_CNV_PARALLEL {
                     pfb,
                     gc_content_windows,
                     sexfile,
-                    gcDir               )
+                    gcDir,
+                    autosome_only               )
 
     // Collect merged QC outputs
     penncnv_qc_ch = callBatchCNVs.out.penncnv_qc

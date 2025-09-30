@@ -159,6 +159,7 @@ process copy_qc_input {
 
 //Default params
 params.pipeline_mode            = "full"
+params.list_sample_baflrrpath   = ""
 params.penncnv_qc_path          = ""
 params.penncnv_calls_path       = ""
 params.quantisnp_calls_path     = ""
@@ -167,6 +168,9 @@ params.genome_version           = "GRCh38"
 params.batch_size               = 64
 params.pfb_sample_size          = 1000
 params.test_batch_num           = -1
+params.autosome_only            = false
+params.report                   = false
+
 
 workflow {
     
@@ -196,8 +200,9 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.gc_model,                            //GC model
                                 extractPlink(params.plink2samplemetadata_tsv).sexfile,          //Sexfile from metadata input
                                 params.genome_version,                                          //GRCh37 or 38
-                                params.batch_size,                                              //Variable batch size to run samples in parallel
-                                params.test_batch_num                                          )//number of batches to run in parallel, default -1 runs all   
+                                params.batch_size,                                              //number of samples to run in a batch
+                                params.test_batch_num,                                          //number of batches to run in parallel, default -1 runs all
+                                params.autosome_only                                          ) //for skipping x-chromosome calling  
         
         // Collect outputs
         penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
