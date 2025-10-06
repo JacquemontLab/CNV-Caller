@@ -4,23 +4,24 @@
 # Batch parallel CNV caller with cpu managment. Relies on cnv_caling.sh 
 #======================================================================
 usage() {
-  echo "Usage: $0 --batch_list FILE --sexfile FILE --pfb FILE --gcmodel FILE --gcdir DIR --hmm_file FILE --levels FILE --config FILE --chr CHR [--mode MODE] [--cpus INT]"
+  echo "Usage: $0 --batch_list FILE --sexfile FILE --pfb FILE --gcmodel FILE --gcdir DIR --hmm_file FILE --levels FILE --config FILE --chr CHR [--mode MODE] [--cpus INT] --autosome_only"
   echo ""
   echo "Required options:"
-  echo "  --batch_list   FILE    Text file with one file path per line"
-  echo "  --sexfile      FILE    .tsv file with individual information"
-  echo "  --pfb          FILE    .tsv file with variant-level scores"
-  echo "  --gcmodel      FILE    Genome file with GC frequency"
-  echo "  --gcdir        DIR     Directory with per-chromosome GC frequency"
-  echo "  --hmm_file     FILE    Hidden Markov Model parameters file"
-  echo "  --levels       FILE    Levels file for analysis"
-  echo "  --config       FILE    Configuration file"
-  echo "  --chr          CHR     Chromosome to analyze (e.g. 1, 2, X)"
+  echo "  --batch_list    FILE    Text file with one file path per line"
+  echo "  --sexfile       FILE    .tsv file with individual information"
+  echo "  --pfb           FILE    .tsv file with variant-level scores"
+  echo "  --gcmodel       FILE    Genome file with GC frequency"
+  echo "  --gcdir         DIR     Directory with per-chromosome GC frequency"
+  echo "  --hmm_file      FILE    Hidden Markov Model parameters file"
+  echo "  --levels        FILE    Levels file for analysis"
+  echo "  --config        FILE    Configuration file"
+  echo "  --chr           CHR     Chromosome to analyze (e.g. 1, 2, X)"
   echo ""
   echo "Optional:"
-  echo "  --mode         MODE    'taskset' (default) or 'parallel'"
-  echo "  --cpus         INT     Number of CPUs to use (overrides SLURM_CPUS_ON_NODE or nproc)"
+  echo "  --mode          MODE    'taskset' (default) or 'parallel'"
+  echo "  --cpus          INT     Number of CPUs to use (overrides SLURM_CPUS_ON_NODE or nproc)"
   echo "  --help                 Show this help message and exit"
+  echo "  --autosome_only FLAG  Only analyze autosomes (true/false)"
   exit 1
 }
 
@@ -31,6 +32,7 @@ mode="taskset"  # default
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --batch_list) batch_list="$2"; shift 2 ;;
+    --autosome_only) autosome_only=1; shift ;;
     --sexfile) sexfile="$2"; shift 2 ;;
     --pfb) pfb="$2"; shift 2 ;;
     --gcmodel) gcmodel="$2"; shift 2 ;;
@@ -93,6 +95,7 @@ if [[ "$mode" == "taskset" ]]; then
       echo "💻 Assigning SampleID $sample_id to CPU core $core"
 
       taskset -c $core cnv_calling.sh \
+        $([ "$autosome_only" -eq 1 ] && echo "--autosome_only") \
         --sample_id "$sample_id" \
         --BAF_LRR_Probes "$file" \
         --sexfile "$sexfile" \
@@ -119,7 +122,7 @@ elif [[ "$mode" == "parallel" ]]; then
     sample_id=$(basename "$file" | cut -d "." -f1)
     echo "🔄 Processing $sample_id"
 
-    cnv_calling.sh \
+    cnv_calling.sh '"$([ "$autosome_only" -eq 1 ] && echo "--autosome_only")"'  \
       --sample_id "$sample_id" \
       --BAF_LRR_Probes "$file" \
       --sexfile "$sexfile" \
