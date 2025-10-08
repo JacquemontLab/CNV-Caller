@@ -175,15 +175,17 @@ params.report                   = false
 workflow {
     
     main:
-    list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
-    batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t")                           
+
+    
+
+    if (params.pipeline_mode == "full"){
+        
+        list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
+        batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t")                           
                                      .map {row -> row[1]}                            //grab filepaths 
                                      .collectFile(newLine: true)                     //make new file of just paths
                                      .splitCsv(by : params.batch_size)               //split file into list of batch size
                                      .take (params.test_batch_num)                   //take only first few batches if not default -1   
-    
-
-    if (params.pipeline_mode == "full"){
         
 
         '''

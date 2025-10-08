@@ -20,11 +20,11 @@ test_data/
 *log
 
 
-#Cohort results testing 
-ALSPAC
-
 #Dataspell
 .idea/
 results/
 work/
 list_baflrr_path.txt
+
+#yaml parameters file
+*.yaml
