@@ -22,7 +22,7 @@ cd $SLURM_SUBMIT_DIR || exit 1
 
 
 # Fixed pipeline mode
-pipeline_mode="pipeline_partial"
+pipeline_mode="partial"
 
 # Default report
 report="false"
