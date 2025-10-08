@@ -86,7 +86,7 @@ The quality filters recommended were:
 - **Waviness factor between $-0.05$ and $0.05$**
 
 
-In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we also recommend applying:  
+In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we recommend applying a filter on the call rate, although the threshold may be adjusted depending on the cohort:
 
 - **Call Rate $\ge 0.98$**
 
