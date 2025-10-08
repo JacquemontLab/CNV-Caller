@@ -28,7 +28,7 @@ cd $SLURM_SUBMIT_DIR || exit 1
 # ------------------------------------------------------------------------------
 
 # Default values
-pipeline_mode="pipeline_full"
+pipeline_mode="full"
 report="false"
 batch_size=10
 
