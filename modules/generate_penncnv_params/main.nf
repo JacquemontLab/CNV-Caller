@@ -5,62 +5,34 @@ nextflow.enable.dsl=2
 /*
  * This pipeline processes BAF+LRR probe files from a cohort of individuals
  * to generate the necessary input files for CNV calling: a PFB file and a GC model.
- * It includes the following steps:
- * 1. Index all BAF+LRR files.
- * 2. Identify the top 1000 samples by call rate.
- * 3. Generate a PFB file.
+ * Steps:
+ * 1. Identify the top X samples by call rate.
+ * 2. Generate a PFB file.
+ * 3. Generate an HMM from top samples.
  * 4. Annotate SNPs with GC content using precomputed genomic windows.
  */
 
 
-// Step 1: Generate a table of sample IDs and paths to BAF+LRR probe files
-// process generate_list_of_path_to_BAF_LRR_Probes {
-//     tag "generate_list_of_path_to_BAF_LRR_Probes"
-
-//     input:
-//     val directory_BAF_LRR_Probes_by_sample  // Input directory containing per-sample BAF+LRR files
-
-//     output:
-//     path "list_path_to_BAF_LRR_Probes.tsv" // TSV file mapping SampleID to full path
-
-//     script:
-//     """
-//     echo "Process Running: generate_list_of_path_to_BAF_LRR_Probes"
-
-//     # Create header, then find all files in the input directory and extract sample ID from filename
-//     (echo -e "SampleID\tPath_to_File_BAF_LRR_Probes" &&
-//     find "$directory_BAF_LRR_Probes_by_sample" -type f -name '*baf_lrr.tsv' | awk -F'/' '{
-//         OFS = "\t";
-//         sampleid = \$NF;
-//         sub(/\\.baf_lrr\\.tsv/, "", sampleid);
-//         print sampleid, \$0;
-//     }' ) > list_path_to_BAF_LRR_Probes.tsv
-//     """
-// }
-
-
-
-
-// Step 2: Select the 1000 samples with the highest call rate
+// Step 1: Select the X samples with the highest call rate
 process getBestSample {
-    tag "get ${pfb_sample_size} best samples"
+    tag "get ${pfb_max_sample_size} best samples"
 
     input:
     path plink2samplemetadata_output    // File with sample ID, call rate, and imputed sex
     path list_path_to_BAF_LRR_Probes    // TSV file mapping SampleID to full path
-    val pfb_sample_size     
+    val pfb_max_sample_size     
 
     output:
-    path "list_best_BAF_LRR_Probes.txt" // List of paths to top 1000 sample files
+    path "list_best_BAF_LRR_Probes.txt" // List of paths to top X sample files
 
     script:
     """
-    echo "Process Running: identify_1000_best_sampleid"
+    echo "Process Running: identify_${pfb_max_sample_size}_best_sampleid"
  
     # Extract top samples by call rate (assumed to be column 2), skipping header
     tail -n +2 "$plink2samplemetadata_output" | 
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' $list_path_to_BAF_LRR_Probes - | 
-    sort -k2,2nr | cut -f1 | head -n ${pfb_sample_size} > SampleID_list
+    sort -k2,2nr | cut -f1 | head -n ${pfb_max_sample_size} > SampleID_list
     
     # Filter original file list to keep only the above samples
     awk 'NR==FNR { sample[\$1]; next } \$1 in sample' SampleID_list $list_path_to_BAF_LRR_Probes | cut -f2 > list_best_BAF_LRR_Probes.txt
@@ -71,12 +43,12 @@ process getBestSample {
 }
 
 
-// Step 3: Generate PFB (Population Frequency of B Allele) from selected samples
+// Step 2: Generate PFB (Population Frequency of B Allele) from selected samples
 process generate_pfb {
     tag "generate_pfb"
 
     input:
-    path list_best_BAF_LRR_Probes    // List of paths to top 1000 sample files
+    path list_best_BAF_LRR_Probes    // List of paths to top X sample files
 
     output:
     path 'pfb.tsv'      // PFB file (Population Frequency of B Allele)
@@ -88,6 +60,41 @@ process generate_pfb {
     }
 
 
+
+
+// Step 3: Generate HMM from the first 10 best samples
+process generate_hmm {
+    tag "generate_hmm"
+
+    input:
+    path list_best_BAF_LRR_Probes    // List of paths to top X sample files
+    path pfb_file                    // PFB file (Population Frequency of B Allele)
+
+    output:
+    path 'hmm_trained.hmm'      // HMM file
+
+    script:
+    """
+    # take first 10 lines (sample paths) from the list
+    head -n 10 "$list_best_BAF_LRR_Probes" > list_baf_lrr.txt
+
+    # We start from a pre-existing HMM:
+    #   - hhall.hmm  -> general high-density SNP arrays
+    #   - hh550.hmm  -> Illumina HumanHap550-specific
+    #   - wgs.hmm    -> whole-genome sequencing
+    #
+    # Each HMM differs in emission and transition probabilities because:
+    #   - SNP arrays have fewer probes and noisier signals (hhall, hh550)
+    #   - WGS has dense, uniform coverage (wgs)
+    # Using the correct starting HMM improves CNV calling accuracy.
+    
+    /usr/local/bin/timedev penncnv --train \
+        --hmmfile /usr/local/PennCNV-1.0.5/lib/wgs.hmm \
+        --pfbfile "$pfb_file" \
+        --listfile list_baf_lrr.txt \
+        --output hmm_trained
+    """
+    }
 
 
 
@@ -133,24 +140,26 @@ workflow PREPARE_PENNCNV_INPUTS {
         list_path_to_BAF_LRR
         plink2samplemetadata_output
         gc_content_windows
-        pfb_sample_size
+        pfb_max_sample_size
 
         
     main:
-
-        // Step 1. Index all BAF+LRR files.
-        // path_list = generate_list_of_path_to_BAF_LRR_Probes(directory_BAF_LRR_Probes_by_sample)
-
-        // Step 2. Identify the top 1000 samples by call rate.
+        // Step 1. Identify the top X samples by call rate.
         getBestSample(
             plink2samplemetadata_output,
             list_path_to_BAF_LRR,
-            pfb_sample_size
+            pfb_max_sample_size
         )
 
-        // Step 3. Generate a PFB file.
+        // Step 2. Generate a PFB file.
         pfb_file = generate_pfb(
             getBestSample.out
+        )
+
+        // Step 3. Generate HMM from the top samples.
+        hmm_file = generate_hmm(
+            getBestSample.out,
+            pfb_file
         )
 
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.
@@ -162,5 +171,6 @@ workflow PREPARE_PENNCNV_INPUTS {
     emit:
         list_path_to_BAF_LRR
         pfb_file
+        hmm_file
         gc_model
 }

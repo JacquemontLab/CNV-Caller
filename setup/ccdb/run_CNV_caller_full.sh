@@ -30,7 +30,7 @@ cd $SLURM_SUBMIT_DIR || exit 1
 # Default values
 pipeline_mode="full"
 report="false"
-batch_size=10
+batch_size=192
 
 # -------------------------------
 # Parse arguments
@@ -60,9 +60,6 @@ for var in git_dir dataset_name genome_version plink2samplemetadata_tsv list_sam
     fi
 done
 
-
-list_baflrr_path=$(tail -n +2 "$list_sample_baflrrpath" | cut -f2)
-
 # Ensure Nextflow runs offline
 export NXF_OFFLINE=true
 
@@ -78,7 +75,6 @@ nextflow run "$MAIN_NF" \
     --dataset_name "$dataset_name" \
     --genome_version "$genome_version" \
     --list_sample_baflrrpath "$list_sample_baflrrpath" \
-    --list_baflrr_path "$list_baflrr_path" \
     --plink2samplemetadata_tsv "$plink2samplemetadata_tsv" \
     --batch_size $batch_size \
     --report "$report" \

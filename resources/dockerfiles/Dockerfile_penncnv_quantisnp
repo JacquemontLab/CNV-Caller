@@ -4,12 +4,10 @@ FROM fedora:42
 COPY QuantiSNP-2.3/ /usr/local/QuantiSNP-2.3/
 COPY PennCNV-1.0.5/ /usr/local/PennCNV-1.0.5/
 
-COPY quantisnp.sh /usr/local/bin/quantisnp
-COPY penncnv.sh /usr/local/bin/penncnv
-
+COPY quantisnp /usr/local/bin/quantisnp
+COPY penncnv /usr/local/bin/penncnv
 
 COPY timedev /usr/local/bin/
-COPY *.sh /usr/local/bin/
 
 # Install required system packages
 RUN dnf install -y --setopt=tsflags=nodocs \
@@ -30,4 +28,5 @@ RUN chmod +x /usr/local/bin/*
 # Set required environment variables
 ENV PERL5LIB=/usr/local/PennCNV-1.0.5/kext:/usr/local/PennCNV-1.0.5/kext/5.40.0/x86_64-linux-thread-multi \
     PATH="/usr/local/bin:$PATH"
+
 

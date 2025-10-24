@@ -16,10 +16,10 @@ process callBatchCNVs {
     input:
     val BAF_LRR_Probes
     path pfb_file
+    path hmm_file
     path gcmodel_file
     path sexfile
     val genome_version
-    val autosome_only
 
     output:
     path "*.penncnv.qc",        emit: penncnv_qc_raw
@@ -31,8 +31,6 @@ process callBatchCNVs {
     path "batch_list.txt",      emit: batch_list
 
     script:
-    if(autosome_only){
-    
     """
     # Turn the nextflow variable into lines of a file
     echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
@@ -40,32 +38,6 @@ process callBatchCNVs {
     # Default parameters avalable in the docker:
     chr="1:23"
     gcdir=/usr/local/QuantiSNP-2.3/GC_correction/${genome_version}/GCdir/
-    hmm_file="/usr/local/PennCNV-1.0.5/lib/wgs.hmm"
-    levels="/usr/local/QuantiSNP-2.3/bin/config/levels.dat"
-    config="/usr/local/QuantiSNP-2.3/bin/config/params.dat"
-
-    batch_cnv_call.sh --batch_list batch_list.txt \
-                    --autosome_only \
-                    --sexfile ${sexfile} \
-                    --pfb ${pfb_file} \
-                    --gcmodel ${gcmodel_file} \
-                    --gcdir \$gcdir \
-                    --hmm_file \$hmm_file \
-                    --levels \$levels \
-                    --config \$config \
-                    --chr \$chr \
-                    --mode taskset \
-                    --cpus ${task.cpus}
-    """
-    } else {
-    """
-    # Turn the nextflow variable into lines of a file
-    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
-
-    # Default parameters avalable in the docker:
-    chr="1:23"
-    gcdir=/usr/local/QuantiSNP-2.3/GC_correction/${genome_version}/GCdir/
-    hmm_file="/usr/local/PennCNV-1.0.5/lib/wgs.hmm"
     levels="/usr/local/QuantiSNP-2.3/bin/config/levels.dat"
     config="/usr/local/QuantiSNP-2.3/bin/config/params.dat"
 
@@ -74,36 +46,35 @@ process callBatchCNVs {
                     --pfb ${pfb_file} \
                     --gcmodel ${gcmodel_file} \
                     --gcdir \$gcdir \
-                    --hmm_file \$hmm_file \
+                    --hmm_file ${hmm_file} \
                     --levels \$levels \
                     --config \$config \
                     --chr \$chr \
                     --mode taskset \
                     --cpus ${task.cpus}
     """
-
-    }
 }
 
 
 workflow  CALL_CNV_PARALLEL {
     take:
-    list_baflrr_path    //file containing a list of filepaths to probe files. Value Channel
-    pfb                 //pfb file generated from prepare_penncnv_params
-    gc_content_windows  //gc model from resources
-    sexfile             //plink data extracted using extract_plink_data
-    genome_version               //resource directory pointing to per-chromosome 1k binned gc content regions
-    autosome_only       //boolean for skipping x-chromosome calling
+    list_baflrr_path         //file containing a list of filepaths to probe files. Value Channel
+    pfb_file                 //pfb file generated from prepare_penncnv_params
+    hmm_file                 // HMM file generated from prepare_penncnv_params
+    gc_content_windows       //gc model generated from prepare_penncnv_params
+    sexfile                  //plink data extracted using extract_plink_data
+    genome_version           //resource directory pointing to per-chromosome 1k binned gc content regions
 
     main:
 
     
     callBatchCNVs ( list_baflrr_path, 
-                    pfb,
+                    pfb_file,
+                    hmm_file,
                     gc_content_windows,
                     sexfile,
-                    genome_version,
-                    autosome_only               )
+                    genome_version
+                )
 
 
                     
@@ -113,5 +84,4 @@ workflow  CALL_CNV_PARALLEL {
         penncnv_cnv_raw_ch   = callBatchCNVs.out.penncnv_cnv_raw
         quantisnp_cnv_ch     = callBatchCNVs.out.quantisnp_cnv
         quantisnp_cnv_raw_ch = callBatchCNVs.out.quantisnp_cnv_raw
-    
 }

@@ -27,21 +27,39 @@ This repository provides a Nextflow-based workflow for identifying and annotatin
 
 ## Prerequisites to Run the Pipeline
 
+### Software dependencies
+
+Refer to the template config files and adjust them to match your infrastructure.
+
+You need to pull the following containers:
+* docker://flobenhsj/quantisnp_penncnv:v2.3
+* docker://flobenhsj/cnv_caller_report:latest
+* docker://flobenhsj/duckdb_python:latest
+* docker://flobenhsj/compile_pfb:latest
+
+Required software:
+
+* **Nextflow** – workflow engine
+* **Docker** (Apptainer or Singularity) – to run containers
+* **bedtools** – for genomic interval operations such as CNV merging, overlap calculations, and annotation
+
+
+### Dataset-specific parameters
 * **dataset\_name**: Name of the dataset, used for directory and report naming.
 * **genome\_version**: Either **GRCh38** or **GRCh37**.
 
 
 ### Specific Inputs to **Full Pipeline** (pipeline_mode=pipeline_full)
 
-* **plink2samplemetadata\_tsv**: A TSV file containing:
+* **plink2samplemetadata\_tsv**: A TSV file (with header) containing:
 
 ```
 SampleID  Call_Rate  Sex  FatherID  MotherID
 ```
-
+> Sex should be "male", "female", or "unknown". Samples with "unknown" gender will only have autosomal CNVs identified; sex chromosome CNVs will not be analyzed.
 > *FatherID* and *MotherID* are only required if `--report "true"` is used, to assess Mendelian precision as an indicator of data quality.
 
-* **list\_sample\_baflrrpath**: A TSV file containing:
+* **list\_sample\_baflrrpath**: A TSV file (with header) containing:
 
 ```
 SampleID  path_to_BAF_LRR
@@ -51,7 +69,15 @@ SampleID  path_to_BAF_LRR
 
 * **batch\_size**: Number of batches to process.
 
-⚠️ Be careful with the `.hmm` file used by PennCNV in the **callBatchCNVs** process.
+⚠️ **Important**: The `.hmm` file used by PennCNV in the **generate_hmm** process should match your data type. Pre-existing HMMs differ in probe density and signal characteristics:
+
+| HMM File    | Intended Data Type                | Notes                                                    |
+| ----------- | --------------------------------- | -------------------------------------------------------- |
+| `hhall.hmm` | High-density SNP arrays (general) | Captures broad allele patterns across multiple platforms |
+| `hh550.hmm` | Illumina HumanHap550 arrays       | Optimized for 550k probe density and distribution        |
+| `wgs.hmm`   | Whole-genome sequencing           | High-resolution data; dense and uniform coverage         |
+
+> Using the correct starting HMM ensures better modeling of CNV state transitions and improves CNV calling accuracy when training on your top-quality samples.
 
 
 #### BAF\_LRR File Format
@@ -122,8 +148,8 @@ sbatch /path/to/CNV-Caller/setup/ccdb/run_CNV_caller_light.sh \
 
 ## CNV Calling in the Full Pipeline
 
-Within the pipeline, the GC model and PFB files required by PennCNV are prepared.
-CNVs are then called per individual on autosomes and chromosome X using the container `docker://flobenhsj/quantisnp_penncnv:v2.2` and the following tools:
+Within the pipeline, the GC model, the HMM profile and PFB files required by PennCNV are prepared.
+CNVs are then called per individual on autosomes and chromosome X (only if the sample’s sex is known) using the container `docker://flobenhsj/quantisnp_penncnv:v2.3` and the following tools:
 
 ### PennCNV
 
@@ -134,6 +160,8 @@ PennCNV is run separately on autosomes and on chromosome X using the commands be
 * Default parameters available in the Docker image:
 
   * `hmm_file="/usr/local/PennCNV-1.0.5/lib/wgs.hmm"`
+  * `hmm_file="/usr/local/PennCNV-1.0.5/lib/hhall.hmm"`
+  * `hmm_file="/usr/local/PennCNV-1.0.5/lib/hh550.hmm"`
 
 ```bash
 # Autosomes
@@ -291,10 +319,10 @@ For details, please refer to the file CNV-Caller/resources/Genome_Regions/README
 
 ### Current Limitations of the pipeline
 
-- For PennCNV, default files such as **hhall.hmm** or **wgs.hmm** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.2):
+- For PennCNV, default files such as **hhall.hmm** or **wgs.hmm** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.3):
 [Git PennCNV](https://github.com/WGLab/PennCNV)
 
-- For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.2):
+- For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.3):
 [Git QuantiSNP](https://github.com/cwcyau/quantisnp)
 
 - Resource requirements of each step must be adjusted depending on the quantity of data analyzed.

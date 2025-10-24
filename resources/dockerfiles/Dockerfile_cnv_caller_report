@@ -1,0 +1,65 @@
+# Base image
+FROM mambaorg/micromamba:2.3-ubuntu22.04
+
+# Labels
+LABEL author="Ben C"
+LABEL version="1.0"
+LABEL description="Micromamba-based container with R and requested R packages"
+
+# Switch to root to install system packages
+USER root
+
+# Install build tools, system dependencies, and ps command
+RUN set -eux && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        libxml2-dev \
+        libjpeg-dev \
+        libpng-dev \
+        git \
+        wget \
+        curl \
+        ca-certificates \
+        procps \
+        texlive-latex-base \
+        texlive-fonts-recommended \
+        texlive-latex-extra \
+        lmodern && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch back to default micromamba user
+USER $MAMBA_USER
+
+# Install R and R packages via micromamba
+RUN micromamba install -y -n base -c conda-forge \
+        r-base \
+        r-ggplot2 \
+        r-patchwork \
+        r-viridis \
+        r-dplyr \
+        r-rlang \
+        r-scales \
+        r-rmarkdown \
+        r-tinytex && \
+    micromamba clean --all --yes
+
+# Set environment variables
+ENV PATH=/opt/conda/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/conda/lib:$LD_LIBRARY_PATH
+
+# Set working directory
+WORKDIR /opt/compile_pfb
+
+# Default command
+CMD ["bash"]
+
+# Optional: test R and ps command
+# You can run these after building with `docker run --rm ...`
+# RUN ps -ef | head -5
+# RUN Rscript -e "cat('R version:', R.Version()$version.string, '\n')"
+# RUN Rscript -e "pkgs <- c('ggplot2','patchwork','viridis','dplyr','rlang','scales'); sapply(pkgs, function(p) { cat(p, ':', requireNamespace(p, quietly=TRUE), '\n') })"
+

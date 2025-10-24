@@ -5,13 +5,13 @@
 # =============================================================================
 # Description:
 #   This script runs CNV detection on SNP array data using two algorithms:
-#   PennCNV and QuantiSNP. It processes both autosomal and sex chromosomes.
+#   PennCNV and QuantiSNP. It processes both autosomal and sex chromosomes only if the sample's gender is known.
 #
 # Inputs:
 #   --sample_id        Sample identifier (required)
 #   --BAF_LRR_Probes   Input file containing B Allele Frequency (BAF) and
 #                      Log R Ratio (LRR) values (required)
-#   --sexfile          Tab-delimited file with sample ID and gender (required)
+#   --sexfile          Tab-delimited file with sample ID and gender ("male", "female" or "unknown") (required)
 #
 # PennCNV-specific inputs:
 #   --pfb              Population Frequency of B Allele file (.pfb)
@@ -66,7 +66,7 @@ log_step() {
 define_usage() {
   echo "Usage: $0 [--sample_id ID] [--BAF_LRR_Probes FILE] [--sexfile FILE] \\
                 [--pfb FILE] [--hmm FILE] [--gcmodel FILE] [--chr CHR] \\
-                [--levels FILE] [--config FILE] [--gcdir DIR] [--autosome_only]"
+                [--levels FILE] [--config FILE] [--gcdir DIR]"
   exit 1
 }
 
@@ -81,7 +81,6 @@ while [[ $# -gt 0 ]]; do
     --pfb) pfb_file="$2"; shift 2;;
     --hmm) hmm_file="$2"; shift 2;;
     --gcmodel) gcmodel_file="$2"; shift 2;;
-    --autosome_only) autosome_only=1; shift ;;
     # ================================
     # QuantiSNP-specific input parameters
     --chr) chr="$2"; shift 2;;
@@ -98,27 +97,24 @@ log_step "STEP 0: Starting CNV calling for sample ${sample_id}"
 # -----------------------------------------------------------------------------
 # Step 1: Extract Gender
 # -----------------------------------------------------------------------------
-if [[ "$autosome_only" -eq 0 ]]; then 
-    log_step "STEP 1: Extracting gender from sex file..."
 
-    sexfile_temp=$(mktemp)
-    zgrep -P "${sample_id}\t" ${sex_file} | cut -f1,2 > ${sexfile_temp}
-    gender=$(cut -f2 ${sexfile_temp} | tr '[:upper:]' '[:lower:]')
-    if [[ -z "$gender" ]]; then
-        log_step "ERROR: No gender information found for sample ID ${sample_id}."
-        exit 1
-    fi
+log_step "STEP 1: Extracting gender from sex file..."
 
-    log_step "INFO: Gender detected as '${gender}'"
-    if [[ "$gender" != "male" && "$gender" != "female" ]]; then
-        log_step "ERROR: Invalid gender '$gender' for sample ID ${sample_id}. Expected 'male' or 'female'."
-        exit 1
-    fi
+sexfile_temp=$(mktemp)
+zgrep -P "${sample_id}\t" ${sex_file} | cut -f1,2 > ${sexfile_temp}
+gender=$(cut -f2 ${sexfile_temp} | tr '[:upper:]' '[:lower:]')
+if [[ -z "$gender" ]]; then
+    log_step "ERROR: No gender information found for sample ID ${sample_id}."
+    exit 1
 fi
 
-if [[ "$autosome_only" -eq 0 ]]; then
-    gender="unknown"
+log_step "INFO: Gender detected as '${gender}'"
+if [[ "$gender" != "male" && "$gender" != "female" && "$gender" != "unknown" ]]; then
+    log_step "ERROR: Invalid gender '$gender' for sample ID ${sample_id}. Expected 'male', 'female', or 'unknown'."
+    exit 1
 fi
+
+
 # -----------------------------------------------------------------------------
 # Step 2: PennCNV (Autosomes)
 # -----------------------------------------------------------------------------
@@ -142,7 +138,7 @@ timedev -v penncnv --test \
 # -----------------------------------------------------------------------------
 # Step 3: PennCNV (ChrX)
 # -----------------------------------------------------------------------------
-if [[ "$autosome_only" -eq 0 ]]; then  
+if [[ "$gender" != "unknown" ]]; then  
     log_step "STEP 3: Running PennCNV on ChrX..."
     timedev -v penncnv --test \
         --conf \
@@ -163,7 +159,7 @@ fi
 
 log_step "STEP 4: Running QuantiSNP..."
 export MCR_CACHE_ROOT=$(mktemp -d mcr_cache_XXXXXX)
-if [[ "$autosome_only" -eq 0 ]]; then
+if [[ "$gender" != "unknown" ]]; then  
     timedev -v quantisnp --chr ${chr} \
         --outdir . \
         --sampleid ${sample_id} \
@@ -182,7 +178,7 @@ else
         --config ${config} \
         --levels ${levels} \
         --gcdir ${gcdir} \
-        --input-files ${BAF_LRR_Probes} 
+        --input-files ${BAF_LRR_Probes} &> ${sample_id}.quantisnp.log
 
     rm -rf "$MCR_CACHE_ROOT"
 fi
@@ -198,7 +194,7 @@ mv ${sample_id}.loh ${sample_id}.quantisnp.loh
 mv ${sample_id}.qc ${sample_id}.quantisnp.qc
 
 log_step "STEP 6: Merging PennCNV results..."
-if [[ "$autosome_only" -eq 0 ]]; then 
+if [[ "$gender" != "unknown" ]]; then   
     cat ${sample_id}.penncnv.chrx.out ${sample_id}.penncnv.out > ${sample_id}.penncnv.cnv
 
     rm ${sample_id}.penncnv.chrx.out ${sample_id}.penncnv.out
