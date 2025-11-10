@@ -29,7 +29,7 @@ jobs:
           context: .
           file: resources/dockerfiles/Dockerfile_cnv_caller_report
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/cnv_caller_report:latest
+          tags: ghcr.io/${{ github.repository_owner.toLowerCase() }}/cnv_caller_report:latest
 
       - name: Build python_3.11
         uses: docker/build-push-action@v6
@@ -37,7 +37,7 @@ jobs:
           context: .
           file: resources/dockerfiles/Dockerfile_python_3.11 
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/python_3.11:latest
+          tags: ghcr.io/${{ github.repository_owner.toLowerCase() }}/python_3.11:latest
 
       - name: Build penncnv-quantisnp
         uses: docker/build-push-action@v6
@@ -45,4 +45,4 @@ jobs:
           context: .
           file: resources/dockerfiles/Dockerfile_penncnv_quantisnp
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/penncnv_quantisnp:v2.3
+          tags: ghcr.io/${{ github.repository_owner.toLowerCase() }}/penncnv_quantisnp:v2.3
