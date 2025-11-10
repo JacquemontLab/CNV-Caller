@@ -19,12 +19,11 @@ test_data/
 #Ignore all logs
 *log
 
-
-#Dataspell
+#ignore dataspell
 .idea/
+
+#ignore top-level nextflow run-time directories
 results/
 work/
-list_baflrr_path.txt
 
-#yaml parameters file
-*.yaml
+
