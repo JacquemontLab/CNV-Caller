@@ -17,7 +17,7 @@ jobs:
       - name: Debug list dockerfiles
         run: |
           pwd
-          ls -R resources/dockerfiles
+          ls 
 
       - name: Checkout repository
         uses: actions/checkout@v4
