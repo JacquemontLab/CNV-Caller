@@ -35,9 +35,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: resources/dockerfiles/Dockerfile_python_3.11 
+          file: resources/dockerfiles/Dockerfile_python_etl_packages
           push: true
-          tags: ghcr.io/jacquemontlab/python_3.11:latest
+          tags: ghcr.io/jacquemontlab/python_etl_packages:latest
 
       - name: Build penncnv-quantisnp
         uses: docker/build-push-action@v6
