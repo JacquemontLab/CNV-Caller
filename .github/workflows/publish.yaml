@@ -2,7 +2,7 @@ name: Build and Push Multiple GHCR Images
 
 on:
   push:
-    branches: [ main, test-ghcr-workflow ]
+    branches: [ test-ghcr-workflow ]
 
 permissions:
   contents: read
@@ -30,12 +30,14 @@ jobs:
           file: resources/dockerfiles/Dockerfile_cnv_caller_report
           push: true
           tags: ghcr.io/jacquemontlab/cnv_caller_report:latest
+          cache-from: type=registry,ref=ghcr.io/jacquemontlab/cnv_caller_report:buildcache
+          cache-to: type=registry,ref=ghcr.io/jacquemontlab/cnv_caller_report:buildcache,mode=max
 
-      - name: Build python_3.11
+      - name: Build python_etl_packages
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: resources/dockerfiles/Dockerfile_python_etl_packages
+          context: resources/dockerfiles/
+          file: Dockerfile_python_etl_packages
           push: true
           tags: ghcr.io/jacquemontlab/python_etl_packages:latest
 
