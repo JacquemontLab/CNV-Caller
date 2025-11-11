@@ -5,6 +5,8 @@ LABEL author="Ben C"
 LABEL version="1.0"
 LABEL description="Micromamba-based container for CNV-Caller ETL processes (compiling pfb, formatting output tables and joins)"
 
+USER root
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         procps \
@@ -13,6 +15,7 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+USER $MAMBA_USER
 
 # Install Python packages with micromamba
 RUN micromamba install -y -n base -c conda-forge \
@@ -25,7 +28,7 @@ RUN micromamba install -y -n base -c conda-forge \
         tqdm && \
     micromamba clean --all --yes
 
-# Set environment variables
+    # Set environment variables
 ENV MAMBA_ROOT_PREFIX=/opt/conda
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 
