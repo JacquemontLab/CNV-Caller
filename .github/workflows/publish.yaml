@@ -35,25 +35,25 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build python_etl_packages
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: /resources/dockerfiles/Dockerfile_python_etl_packages
+          file: ./resources/dockerfiles/Dockerfile_python_etl_packages
           push: true
           tags: ghcr.io/jacquemontlab/python_etl_packages:latest
       
       - name: Build cnv_caller_report
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: /resources/dockerfiles/Dockerfile_cnv_caller_report
+          file: ./resources/dockerfiles/Dockerfile_cnv_caller_report
           push: true
           tags: ghcr.io/jacquemontlab/cnv_caller_report:latest
 
       - name: Build penncnv-quantisnp
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: /resources/dockerfiles/Dockerfile_penncnv_quantisnp
+          file: ./resources/dockerfiles/Dockerfile_penncnv_quantisnp
           push: true
           tags: ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
