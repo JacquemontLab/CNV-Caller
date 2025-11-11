@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./resources/dockerfiles
-          file: ./resources/dockerfiles/Dockerfile_python_etl_packages
+          file: Dockerfile_python_etl_packages
           push: true
           tags: ghcr.io/jacquemontlab/python_etl_packages:latest
       
@@ -44,7 +44,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./resources/dockerfiles
-          file: ./resources/dockerfiles/Dockerfile_cnv_caller_report
+          file: Dockerfile_cnv_caller_report
           push: true
           tags: ghcr.io/jacquemontlab/cnv_caller_report:latest
 
@@ -52,6 +52,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./resources/dockerfiles
-          file: ./resources/dockerfiles/Dockerfile_penncnv_quantisnp
+          file: Dockerfile_penncnv_quantisnp
           push: true
           tags: ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
