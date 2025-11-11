@@ -23,7 +23,8 @@ jobs:
       - name: Debug list dockerfiles
         run: |
           pwd
-          ls -la
+          ls ./resources -la
+
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -36,7 +37,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: resources/dockerfiles/Dockerfile_python_etl_packages
+          file: ./resources/dockerfiles/Dockerfile_python_etl_packages
           push: true
           tags: ghcr.io/jacquemontlab/python_etl_packages:latest
       
@@ -44,7 +45,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: resources/dockerfiles/Dockerfile_cnv_caller_report
+          file: ./resources/dockerfiles/Dockerfile_cnv_caller_report
           push: true
           tags: ghcr.io/jacquemontlab/cnv_caller_report:latest
 
@@ -52,6 +53,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: resources/dockerfiles/Dockerfile_penncnv_quantisnp
+          file: ./resources/dockerfiles/Dockerfile_penncnv_quantisnp
           push: true
           tags: ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
