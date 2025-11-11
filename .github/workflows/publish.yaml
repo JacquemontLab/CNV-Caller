@@ -26,8 +26,8 @@ jobs:
       - name: Build python_etl_packages
         uses: docker/build-push-action@v6
         with:
-          context: resources/dockerfiles/
-          file: Dockerfile_python_etl_packages
+          context: .
+          file: resources/dockerfiles/Dockerfile_python_etl_packages
           push: true
           tags: ghcr.io/jacquemontlab/python_etl_packages:latest
       
