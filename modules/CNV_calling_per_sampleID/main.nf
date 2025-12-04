@@ -14,7 +14,7 @@ process callBatchCNVs {
     label "cnv_calling"
 
     input:
-    val BAF_LRR_Probes
+    path BAF_LRR_Probes
     path pfb_file
     path hmm_file
     path gcmodel_file
@@ -33,7 +33,7 @@ process callBatchCNVs {
     script:
     """
     # Turn the nextflow variable into lines of a file
-    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
+    echo ${BAF_LRR_Probes} |  tr " " "\\n" | tr -d " " > batch_list.txt
 
     # Default parameters avalable in the docker:
     chr="1:23"

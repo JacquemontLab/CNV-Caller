@@ -2,7 +2,7 @@ name: Build and Push Multiple GHCR Images
 
 on:
   push:
-    branches: [ test-ghcr-workflow ]
+    branches: [ main, test-ghcr-workflow, aou-fixes ]
   workflow_dispatch:
 
 permissions:
@@ -17,8 +17,7 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: test-ghcr-workflow
+        
 
       - name: Debug list dockerfiles
         run: |

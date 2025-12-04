@@ -65,24 +65,6 @@ log_step() {
     echo -e "\n[$(date '+%Y-%m-%d %H:%M:%S')] $icon $1"
 }
 
-# Warn about Polars
-log_step "WARN : Install Polars for Python"
-
-# Try installing polars
-if pip install --quiet polars; then
-    log_step "DONE : Polars installed successfully"
-else
-    log_step "ERROR : Failed to install Polars"
-    exit 1
-fi
-
-# Check if bedtools is available
-if command -v bedtools >/dev/null 2>&1; then
-    log_step "DONE : bedtools is available"
-else
-    log_step "ERROR : bedtools not found in PATH"
-    exit 1
-fi
 
 # Get the directory of the currently running script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

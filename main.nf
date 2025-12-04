@@ -1,7 +1,6 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-nextflow.preview.output = true
 nextflow.enable.moduleBinaries = true
 
 //import subworkflows
@@ -171,15 +170,19 @@ workflow {
         
         list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
         batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t",  header: true)                       
-                                     .map {row -> row['path_to_BAF_LRR']}            // grab filepaths 
-                                     .collectFile(newLine: true)                     // make new file of just paths
-                                     .splitCsv(by : params.batch_size)               // split file into list of batch size
+                                     .map {row -> row['path_to_BAF_LRR']}            // grab filepaths only
+                                     .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
+               
         
+
+
+        plink_ch = extractPlink(params.plink2samplemetadata_tsv)
 
         '''
         PREPARE INPUTS for PennCNV
         '''
-        PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath,
+
+        PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath, //CHANGE TO FILE CHANNEL OF ALL SAMPLES
                                 params.plink2samplemetadata_tsv,
                                 file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
                                 params.pfb_max_sample_size)
@@ -191,7 +194,7 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            // PFB file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file.first(),                            // HMM file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
-                                extractPlink(params.plink2samplemetadata_tsv).sexfile.first(),          // Sexfile from metadata input 
+                                plink_ch.sexfile.first(),          // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                             )
         
@@ -259,7 +262,7 @@ workflow {
 
     // Run report only if requested
     if (params.report) {
-        trio_file = extractPlink(params.plink2samplemetadata_tsv).triofile
+        trio_file = plink_ch.triofile
 
         REPORT_PDF (    params.dataset_name,
                         params.plink2samplemetadata_tsv,

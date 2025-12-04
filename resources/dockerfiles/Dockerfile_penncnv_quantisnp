@@ -1,8 +1,15 @@
 # Start from the existing Quantisnp PennCNV image
 FROM flobenhsj/quantisnp_penncnv:v2.3
 
+USER root
+
 # Optional: set default shell to bash
 SHELL ["/bin/bash", "-c"]
+
+# Update system and install prerequisites
+RUN dnf update -y && \
+    dnf install -y curl python3 which && \
+    dnf clean all
 
 # Default command
 CMD ["bash"]

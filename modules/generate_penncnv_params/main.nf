@@ -55,7 +55,8 @@ process generate_pfb {
 
     script:
     """
-    compile_pfb.py  ${list_best_BAF_LRR_Probes} pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
+    echo ${list_best_BAF_LRR_Probes} | tr " " "\\n" | tr -d " " > batch_list.txt
+    compile_pfb.py  batch_list.txt pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
     """
     }
 
@@ -76,7 +77,8 @@ process generate_hmm {
     script:
     """
     # take first 10 lines (sample paths) from the list
-    head -n 10 "$list_best_BAF_LRR_Probes" > list_baf_lrr.txt
+    # head -n 10 "$list_best_BAF_LRR_Probes" > list_baf_lrr.txt 
+    echo ${list_best_BAF_LRR_Probes} | cut -d " " -f1-10 | tr " " "\\n" | tr -d " " > list_baf_lrr.txt
 
     # We start from a pre-existing HMM:
     #   - hhall.hmm  -> general high-density SNP arrays
@@ -89,7 +91,7 @@ process generate_hmm {
     # Using the correct starting HMM improves CNV calling accuracy.
     
     /usr/local/bin/timedev penncnv --train \
-        --hmmfile /usr/local/PennCNV-1.0.5/lib/wgs.hmm \
+        --hmmfile /usr/local/PennCNV-1.0.5/lib/hhall.hmm \
         --pfbfile "$pfb_file" \
         --listfile list_baf_lrr.txt \
         --output hmm_trained
@@ -151,14 +153,16 @@ workflow PREPARE_PENNCNV_INPUTS {
             pfb_max_sample_size
         )
 
+        best_sample_ch = getBestSample.out.splitCsv().collect()
+
         // Step 2. Generate a PFB file.
         pfb_file = generate_pfb(
-            getBestSample.out
+            best_sample_ch 
         )
 
         // Step 3. Generate HMM from the top samples.
         hmm_file = generate_hmm(
-            getBestSample.out,
+            best_sample_ch ,
             pfb_file
         )
 
