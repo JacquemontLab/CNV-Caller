@@ -160,6 +160,7 @@ params.genome_version           = "GRCh38"
 params.batch_size               = 64
 params.pfb_max_sample_size      = 1000
 params.report                   = false
+params.data_type                = "array"
 
 
 workflow {
@@ -183,9 +184,10 @@ workflow {
         '''
 
         PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath, //CHANGE TO FILE CHANNEL OF ALL SAMPLES
-                                params.plink2samplemetadata_tsv,
-                                file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
-                                params.pfb_max_sample_size)
+                                 params.plink2samplemetadata_tsv,
+                                 file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
+                                 params.pfb_max_sample_size,
+                                 params.data_type                                                                                        )
 
         '''
         CALLING CNVs AND MERGE
@@ -196,7 +198,7 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
                                 plink_ch.sexfile.first(),          // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
-                            )
+                              )
         
         // Collect outputs
         penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch

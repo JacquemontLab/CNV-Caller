@@ -18,6 +18,7 @@ nextflow_pipeline {
              report = false
              pfb_max_sample_size = 3
              outDir = "results/tests"
+             data_type = "array"
             }
         }
 

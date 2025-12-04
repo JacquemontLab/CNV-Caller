@@ -70,6 +70,7 @@ process generate_hmm {
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
     path pfb_file                    // PFB file (Population Frequency of B Allele)
+    val data_type
 
     output:
     path 'hmm_trained.hmm'      // HMM file
@@ -89,9 +90,18 @@ process generate_hmm {
     #   - SNP arrays have fewer probes and noisier signals (hhall, hh550)
     #   - WGS has dense, uniform coverage (wgs)
     # Using the correct starting HMM improves CNV calling accuracy.
+
+    if [[ "${data_type}" == "array"  ]];then
+        model="hhall.hmm"
+    elif [[ "${data_type}"  == "wgs" ]];then
+        model="wgs.hmm"
+    else
+        echo "Invalid datatype. Use either 'array' or 'wgs'."
+        exit 1 
+    fi
     
     /usr/local/bin/timedev penncnv --train \
-        --hmmfile /usr/local/PennCNV-1.0.5/lib/hhall.hmm \
+        --hmmfile "/usr/local/PennCNV-1.0.5/lib/\$model"  \
         --pfbfile "$pfb_file" \
         --listfile list_baf_lrr.txt \
         --output hmm_trained
@@ -143,6 +153,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         plink2samplemetadata_output
         gc_content_windows
         pfb_max_sample_size
+        data_type
 
         
     main:
@@ -163,7 +174,8 @@ workflow PREPARE_PENNCNV_INPUTS {
         // Step 3. Generate HMM from the top samples.
         hmm_file = generate_hmm(
             best_sample_ch ,
-            pfb_file
+            pfb_file,
+            data_type
         )
 
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.

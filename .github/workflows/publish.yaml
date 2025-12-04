@@ -2,7 +2,7 @@ name: Build and Push Multiple GHCR Images
 
 on:
   push:
-    branches: [ main, test-ghcr-workflow, aou-fixes ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
