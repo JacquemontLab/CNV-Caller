@@ -3,10 +3,10 @@
 // nf-test test tests/main.nf.test --profile apptainer,local
 nextflow_pipeline {
 
-    name "T1:Test Full Pipeline Workflow main.nf without report"
+    name "Test Full Pipeline and Partial Workflow main.nf without report"
     script "main.nf"
 
-    test("Should run without failures and produce final outputs") {
+    test("Full run should run without failures and produce final outputs") {
 
         when {
             params {
@@ -32,6 +32,28 @@ nextflow_pipeline {
             assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
             assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
             assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
+        }
+
+    }
+
+    test("Partial run should exit without errors") {
+
+        when {
+            params {
+             plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+             penncnv_calls_path = "${projectDir}/tests/partial/calls_unfiltered/penncnv/PennCNV_raw_calls.txt"
+             quantisnp_calls_path = "${projectDir}/tests/partial/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt"
+             penncnv_qc_path = "${projectDir}/tests/partial/PennCNV_QC.tsv"
+             genome_version = "GRCh38"
+             dataset_name = "T2"
+             report = false
+             outDir = "results/tests"
+             pipeline_mode = "partial"
+            }
+        }
+
+        then {
+            assert workflow.success
         }
 
     }

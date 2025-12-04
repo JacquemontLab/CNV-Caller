@@ -73,7 +73,7 @@ process extractPlink {
 
 }
 
-process merge_sample_metadata {
+process mergeSampleMetadata {
     tag "merge sample level data"
 
     input:
@@ -99,43 +99,35 @@ process merge_sample_metadata {
     """
 }
 
-process format_penncnv_raw {
-    tag "format PennCNV raw output"
+process formatRawCNV {
+    tag "formating Raw CNV output"
 
     input:
     path penncnv_cnv_raw
+    path quantisnp_cnv_raw
 
     output:
-    path "PennCNV_CNV.tsv",  emit: penncnv_cnv
-    path penncnv_cnv_raw,  emit: penncnv_cnv_raw
+    path "PennCNV_CNV.tsv",     emit: penncnv_cnv
+    path penncnv_cnv_raw,       emit: penncnv_cnv_raw
+    path "QuantiSNP_CNV.tsv",   emit: quantisnp_cnv
+    path quantisnp_cnv_raw,     emit: quantisnp_cnv_raw
 
     script:
     """
+    # PennCNV formatting:
+
     # Remove quotes from input files
     sed 's/"//g' "$penncnv_cnv_raw" > pc_no_quotes.txt
 
     format_penncnv_cnv.sh "pc_no_quotes.txt" "PennCNV_CNV.tsv"
-    """
-}
 
-process format_quantisnp_raw {
-    tag "format QuantiSNP raw output"
-
-    input:
-    path quantisnp_cnv_raw
-
-    output:
-    path "QuantiSNP_CNV.tsv",  emit: quantisnp_cnv
-    path quantisnp_cnv_raw,  emit: quantisnp_cnv_raw
-
-    script:
-    """
-    # Remove quotes from input files
+    # Quantisnp Formatting:
     sed 's/"//g' "$quantisnp_cnv_raw" > qs_no_quotes.txt
 
     format_quantisnp_cnv.sh "qs_no_quotes.txt" "QuantiSNP_CNV.tsv"
     """
 }
+
 
 process copy_qc_input {
     input:
@@ -163,6 +155,31 @@ params.report                   = false
 params.data_type                = "array"
 
 
+
+workflow FORMAT_CNV {  
+    take :
+        penncnv_calls_path
+        quantisnp_calls_path
+        penncnv_qc_path
+        plink2samplemetadata_tsv
+
+    main :
+
+        formatRawCNV(penncnv_calls_path, quantisnp_calls_path)
+
+        if (file(penncnv_qc_path).exists() && plink2samplemetadata_tsv){
+
+            mergeSampleMetadata( plink2samplemetadata_tsv, penncnv_qc_path )   
+        }
+
+    emit:
+    formatted_penncnv    = formatRawCNV.out.penncnv_cnv
+    formatted_quantisnp  = formatRawCNV.out.quantisnp_cnv
+    sample_DB            = mergeSampleMetadata.out ?: Channel.empty()
+    penncnv_qc           = penncnv_qc_path
+
+}
+
 workflow {
     
     main:
@@ -178,7 +195,7 @@ workflow {
 
 
         plink_ch = extractPlink(params.plink2samplemetadata_tsv)
-
+       
         '''
         PREPARE INPUTS for PennCNV
         '''
@@ -187,7 +204,8 @@ workflow {
                                  params.plink2samplemetadata_tsv,
                                  file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
                                  params.pfb_max_sample_size,
-                                 params.data_type                                                                                        )
+                                 params.data_type                                                                                        
+                                )
 
         '''
         CALLING CNVs AND MERGE
@@ -224,26 +242,29 @@ workflow {
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"PennCNV_QC.tsv")
+        
+        //Make SampleDB
+        sample_db_ch = mergeSampleMetadata(params.plink2samplemetadata_tsv, penncnv_qc)
 
     
     } else if (params.pipeline_mode == "partial") {
         
-        penncnv_ch    = format_penncnv_raw(Channel.fromPath(params.penncnv_calls_path))
-        quantisnp_ch  = format_quantisnp_raw(Channel.fromPath(params.quantisnp_calls_path))
+       FORMAT_CNV (    file(params.penncnv_calls_path),
+                       file(params.quantisnp_calls_path),
+                       file(params.penncnv_qc_path),
+                       file(params.plink2samplemetadata_tsv)       
+                  )
 
-        // Load precomputed CNV calls
-        penncnv_cnv_raw   = penncnv_ch.penncnv_cnv_raw
-        quantisnp_cnv_raw = quantisnp_ch.quantisnp_cnv_raw
-
-        penncnv_cnv = penncnv_ch.penncnv_cnv
-        quantisnp_cnv = quantisnp_ch.quantisnp_cnv
-
-        // Only load QC channel if the path exists
-        if (file(params.penncnv_qc_path).exists()) {
-            penncnv_qc = copy_qc_input(Channel.fromPath(params.penncnv_qc_path))
-        }
+        //formatting output from partial run to mask variables
+        sample_db_ch      = FORMAT_CNV.out.sample_DB
+        penncnv_qc        = FORMAT_CNV.out.penncnv_qc
+        penncnv_cnv_raw   = file(params.penncnv_calls_path)
+        quantisnp_cnv_raw = file(params.quantisnp_calls_path)
+        quantisnp_cnv     = FORMAT_CNV.out.formatted_quantisnp
+        penncnv_cnv       = FORMAT_CNV.out.formatted_penncnv
     }
 
+    //RUN for both partial and full runs 
     '''
     PREFILTERING - MERGING
     '''
@@ -254,13 +275,7 @@ workflow {
                      )
 
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-
-    // Merge sample metadata only if QC channel exists and metadata file is provided
-    if (params.pipeline_mode == "full" ) {
-        merge_sample_metadata(params.plink2samplemetadata_tsv, penncnv_qc)
-    } else if (params.pipeline_mode == "partial" && file(params.penncnv_qc_path).exists() && params.plink2samplemetadata_tsv) {
-        merge_sample_metadata(params.plink2samplemetadata_tsv, penncnv_qc)
-    }
+     
 
     // Run report only if requested
     if (params.report) {
@@ -284,14 +299,15 @@ workflow {
                     params.report ? REPORT_PDF.out.merged_cnv_qc : merged_cnv )
 
 
+    
     publish:
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-    sampleDB   = merge_sample_metadata.out ?: Channel.empty()
+    sampleDB   = sample_db_ch ?: Channel.empty()                                                            //publish even if empty
 
     // Before filter results
-    penncnv_qc        = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())
+    penncnv_qc        = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())              //only emits from the full run 
     penncnv_cnv_raw   = penncnv_cnv_raw
     penncnv_cnv       = penncnv_cnv
     quantisnp_cnv_raw = quantisnp_cnv_raw
