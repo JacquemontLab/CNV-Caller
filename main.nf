@@ -4,10 +4,10 @@ nextflow.enable.dsl=2
 nextflow.enable.moduleBinaries = true
 
 //import subworkflows
-include { PREPARE_PENNCNV_INPUTS } from './modules/generate_penncnv_params'
-include { CALL_CNV_PARALLEL      } from './modules/CNV_calling_per_sampleID'
-include { MERGE_CNV_CALLS        } from './modules/merge_dataset_CNV'
-include { REPORT_PDF             } from './modules/qc_report_pdf'
+include { PREPARE_PENNCNV_INPUTS } from './modules/prepare_penncnv_inputs'
+include { CALL_CNV               } from './modules/call_cnv'
+include { MERGE_CNV_CALLS        } from './modules/merge_cnv_calls'
+include { MAKE_REPORT            } from './modules/make_report'
 
 
 
@@ -118,28 +118,16 @@ process formatRawCNV {
 
     # Remove quotes from input files
     sed 's/"//g' "$penncnv_cnv_raw" > pc_no_quotes.txt
-
     format_penncnv_cnv.sh "pc_no_quotes.txt" "PennCNV_CNV.tsv"
 
     # Quantisnp Formatting:
     sed 's/"//g' "$quantisnp_cnv_raw" > qs_no_quotes.txt
-
     format_quantisnp_cnv.sh "qs_no_quotes.txt" "QuantiSNP_CNV.tsv"
     """
 }
 
 
-process copy_qc_input {
-    input:
-    path penncnv_qc
 
-    output:
-    path penncnv_qc
-
-    script:
-    """
-    """
-}
 
 //Default params
 params.pipeline_mode            = "full"
@@ -210,7 +198,7 @@ workflow {
         '''
         CALLING CNVs AND MERGE
         '''
-        CALL_CNV_PARALLEL     ( batch_ch,                                                               // File of paths to baf_lrr files without the sampleID
+        CALL_CNV              ( batch_ch,                                                               // File of paths to baf_lrr files without the sampleID
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            // PFB file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file.first(),                            // HMM file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
@@ -219,26 +207,26 @@ workflow {
                               )
         
         // Collect outputs
-        penncnv_cnv_raw     = CALL_CNV_PARALLEL.out.penncnv_cnv_raw_ch
+        penncnv_cnv_raw     = CALL_CNV.out.penncnv_cnv_raw_ch
                                                     .flatten()
                                                     .collectFile(keepHeader : true,
                                                                  name       :"PennCNV_raw_calls.txt")
 
-        quantisnp_cnv_raw   = CALL_CNV_PARALLEL.out.quantisnp_cnv_raw_ch
+        quantisnp_cnv_raw   = CALL_CNV.out.quantisnp_cnv_raw_ch
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"QuantiSNP_raw_calls.txt")
 
-        penncnv_cnv         = CALL_CNV_PARALLEL.out.penncnv_cnv_ch                                                   
+        penncnv_cnv         = CALL_CNV.out.penncnv_cnv_ch                                                   
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"PennCNV_CNV.tsv")
-        quantisnp_cnv       = CALL_CNV_PARALLEL.out.quantisnp_cnv_ch                                                   
+        quantisnp_cnv       = CALL_CNV.out.quantisnp_cnv_ch                                                   
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"QuantiSNP_CNV.tsv")
 
-        penncnv_qc          = CALL_CNV_PARALLEL.out.penncnv_qc_ch
+        penncnv_qc          = CALL_CNV.out.penncnv_qc_ch
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"PennCNV_QC.tsv")
@@ -249,7 +237,8 @@ workflow {
     
     } else if (params.pipeline_mode == "partial") {
         
-       FORMAT_CNV (    file(params.penncnv_calls_path),
+       FORMAT_CNV (    
+                       file(params.penncnv_calls_path),
                        file(params.quantisnp_calls_path),
                        file(params.penncnv_qc_path),
                        file(params.plink2samplemetadata_tsv)       
@@ -272,7 +261,7 @@ workflow {
                         penncnv_cnv,
                         file("${projectDir}/resources/Genome_Regions/Genome_Regions_data.tsv"),
                         params.genome_version
-                     )
+                    )
 
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
      
@@ -281,13 +270,14 @@ workflow {
     if (params.report) {
         trio_file = plink_ch.triofile
 
-        REPORT_PDF (    params.dataset_name,
-                        params.plink2samplemetadata_tsv,
-                        trio_file,
-                        penncnv_qc,
-                        penncnv_cnv_raw,
-                        quantisnp_cnv_raw,
-                        merged_cnv                     )
+        MAKE_REPORT (    params.dataset_name,
+                         params.plink2samplemetadata_tsv,
+                         trio_file,
+                         penncnv_qc,
+                         penncnv_cnv_raw,
+                         quantisnp_cnv_raw,
+                         merged_cnv                     \
+                    )
     }
 
     '''
@@ -296,7 +286,7 @@ workflow {
     
     buildSummary  ( params.dataset_name,
                     params.genome_version,
-                    params.report ? REPORT_PDF.out.merged_cnv_qc : merged_cnv )
+                    params.report ? MAKE_REPORT.out.merged_cnv_qc : merged_cnv )
 
 
     
@@ -307,17 +297,17 @@ workflow {
     sampleDB   = sample_db_ch ?: Channel.empty()                                                            //publish even if empty
 
     // Before filter results
-    penncnv_qc        = penncnv_qc ?: (CALL_CNV_PARALLEL.out.penncnv_qc_ch ?: Channel.empty())              //only emits from the full run 
+    penncnv_qc        = penncnv_qc ?: (CALL_CNV.out.penncnv_qc_ch ?: Channel.empty())              //only emits from the full run 
     penncnv_cnv_raw   = penncnv_cnv_raw
     penncnv_cnv       = penncnv_cnv
     quantisnp_cnv_raw = quantisnp_cnv_raw
     quantisnp_cnv     = quantisnp_cnv
 
     // REPORT outputs only if report was run
-    penncnv_unfilter_cnv_qc   = params.report ? REPORT_PDF.out.penncnv_unfilter_cnv_qc : Channel.empty()
-    quantisnp_unfilter_cnv_qc = params.report ? REPORT_PDF.out.quantisnp_unfilter_cnv_qc : Channel.empty()
-    merged_cnv_qc             = params.report ? REPORT_PDF.out.merged_cnv_qc : Channel.empty()
-    sample_qc_report          = params.report ? REPORT_PDF.out.sample_qc_report : Channel.empty()
+    penncnv_unfilter_cnv_qc   = params.report ? MAKE_REPORT.out.penncnv_unfilter_cnv_qc   : Channel.empty()
+    quantisnp_unfilter_cnv_qc = params.report ? MAKE_REPORT.out.quantisnp_unfilter_cnv_qc : Channel.empty()
+    merged_cnv_qc             = params.report ? MAKE_REPORT.out.merged_cnv_qc             : Channel.empty()
+    sample_qc_report          = params.report ? MAKE_REPORT.out.sample_qc_report          : Channel.empty()
 
     report_summary = buildSummary.out
 }

@@ -56,7 +56,7 @@ process callBatchCNVs {
 }
 
 
-workflow  CALL_CNV_PARALLEL {
+workflow  CALL_CNV {
     take:
     list_baflrr_path         //file containing a list of filepaths to probe files. Value Channel
     pfb_file                 //pfb file generated from prepare_penncnv_params

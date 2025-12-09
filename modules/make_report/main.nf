@@ -219,7 +219,7 @@ workflow do_penncnv_qc {
 }
 
 
-workflow REPORT_PDF {
+workflow MAKE_REPORT {
     take:
     dataset_name
     plink2samplemetadata_tsv
