@@ -11,7 +11,7 @@ nextflow.enable.dsl=2
 
 // Define the process to run CNV calling
 process callBatchCNVs {
-    label "cnv_calling"
+    label "penncnv_quantisnp"
 
     input:
     path BAF_LRR_Probes

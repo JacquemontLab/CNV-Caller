@@ -3,7 +3,7 @@
 // nf-test test tests/main.nf.test --profile apptainer,local
 nextflow_pipeline {
 
-    name "Test Full Pipeline and Partial Workflow main.nf without report"
+    name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
     script "main.nf"
 
     test("Full run should run without failures and produce final outputs") {
@@ -11,7 +11,7 @@ nextflow_pipeline {
         when {
             params {
              plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
-             list_sample_baflrrpath = "${projectDir}/tests/samplefile.tsv"
+             sample_file = "${projectDir}/tests/samplefile.tsv"
              batch_size = 3
              genome_version = "GRCh38"
              dataset_name = "T1"

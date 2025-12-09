@@ -12,9 +12,10 @@ include { MAKE_REPORT            } from './modules/make_report'
 
 
 process buildSummary {
-    tag 'quick'
     
     input:
+    val input_file
+    val git_hash
     val cohort_tag
     val genome_version
     path last_outfile
@@ -24,31 +25,36 @@ process buildSummary {
 
     script:
     """
-        # Convert workflow start datetime to epoch seconds
-        start_sec=\$(date -d "${workflow.start}" +%s)
-        # Get current time in epoch seconds
-        end_sec=\$(date +%s)
+    # Convert workflow start datetime to epoch seconds
+    start_sec=\$(date -d "${workflow.start}" +%s)
 
-        # Calculate duration in seconds
-        duration=\$(( end_sec - start_sec ))
+    # Get current time in epoch seconds
+    end_sec=\$(date +%s)
 
-        # Convert duration to minutes and seconds
-        minutes=\$(( duration / 60 ))
-        seconds=\$(( duration % 60 ))
+    # Calculate duration in seconds
+    duration=\$(( end_sec - start_sec ))
 
-       cat <<EOF > launch_report.txt
-       CNV-Caller ${cohort_tag} run summary:
-       run name: ${workflow.runName}
-       version: ${workflow.manifest.version}
-       configs: ${workflow.configFiles}
-       workDir: ${workflow.workDir}
-       genome_version: ${genome_version}
-       launch_user: ${workflow.userName}
-       start_time: ${workflow.start}
-       duration: \${minutes} minutes and \${seconds} seconds
+    # Convert duration to minutes and seconds
+    minutes=\$(( duration / 60 ))
+    seconds=\$(( duration % 60 ))
 
-       Command:
-       ${workflow.commandLine}
+    cat <<EOF > launch_report.txt
+    CNV_Caller ${cohort_tag} run summary:
+    run name: ${workflow.runName}
+    version: ${workflow.manifest.version}
+    configs: ${workflow.configFiles}
+    workDir: ${workflow.workDir}
+    input_file: ${input_file}
+    genome_version: ${genome_version}
+    launch_user: ${workflow.userName}
+    start_time: ${workflow.start}
+    duration: \${minutes} minutes and \${seconds} seconds
+
+    Command:
+    ${workflow.commandLine}
+
+    Git hash working version:
+    commit ${git_hash}
     """
 
     stub:
@@ -131,7 +137,7 @@ process formatRawCNV {
 
 //Default params
 params.pipeline_mode            = "full"
-params.list_sample_baflrrpath   = ""
+params.sample_file              = ""
 params.penncnv_qc_path          = ""
 params.penncnv_calls_path       = ""
 params.quantisnp_calls_path     = ""
@@ -142,7 +148,7 @@ params.pfb_max_sample_size      = 1000
 params.report                   = false
 params.data_type                = "array"
 params.dataset_name             = ""
-
+params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
 
 
 workflow FORMAT_CNV {  
@@ -175,11 +181,11 @@ workflow {
 
     if (params.pipeline_mode == "full"){
         
-        list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
+        sample_file_ch  = Channel.fromPath(params.sample_file)
 
-        batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t",  header: true)                       
-                                         .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
-                                         .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
+        batch_ch = sample_file_ch.splitCsv(sep: "\t",  header: true)                       
+                                 .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
+                                 .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
                
         
 
@@ -190,7 +196,7 @@ workflow {
         PREPARE INPUTS for PennCNV
         '''
 
-        PREPARE_PENNCNV_INPUTS ( list_sample_baflrrpath, //CHANGE TO FILE CHANNEL OF ALL SAMPLES
+        PREPARE_PENNCNV_INPUTS ( sample_file_ch, 
                                  params.plink2samplemetadata_tsv,
                                  file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
                                  params.pfb_max_sample_size,
@@ -278,7 +284,7 @@ workflow {
                          penncnv_qc,
                          penncnv_cnv_raw,
                          quantisnp_cnv_raw,
-                         merged_cnv                     \
+                         merged_cnv                     
                     )
     }
 
@@ -286,9 +292,12 @@ workflow {
     SUMMARY BUILDER
     '''
     
-    buildSummary  ( params.dataset_name,
+    buildSummary  ( params.sample_file,
+                    params.git_hash,
+                    params.dataset_name,
                     params.genome_version,
-                    params.report ? MAKE_REPORT.out.merged_cnv_qc : merged_cnv )
+                    params.report ? MAKE_REPORT.out.merged_cnv_qc : merged_cnv 
+                  )
 
 
     

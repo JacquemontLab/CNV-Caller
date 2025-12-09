@@ -45,7 +45,7 @@ process getBestSample {
 
 // Step 2: Generate PFB (Population Frequency of B Allele) from selected samples
 process generate_pfb {
-    tag "generate_pfb"
+
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
@@ -65,7 +65,8 @@ process generate_pfb {
 
 // Step 3: Generate HMM from the first 10 best samples
 process generate_hmm {
-    tag "generate_hmm"
+    tag "building hmm model from default ${data_type} model"
+    label "penncnv_quantisnp"
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
