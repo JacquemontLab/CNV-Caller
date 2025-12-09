@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl=2
-nextflow.enable.moduleBinaries = true
+
 
 //import subworkflows
 include { PREPARE_PENNCNV_INPUTS } from './modules/prepare_penncnv_inputs'
@@ -141,6 +141,7 @@ params.batch_size               = 64
 params.pfb_max_sample_size      = 1000
 params.report                   = false
 params.data_type                = "array"
+params.dataset_name             = ""
 
 
 
@@ -175,9 +176,10 @@ workflow {
     if (params.pipeline_mode == "full"){
         
         list_sample_baflrrpath   = Channel.fromPath(params.list_sample_baflrrpath)
+
         batch_ch = list_sample_baflrrpath.splitCsv(sep: "\t",  header: true)                       
-                                     .map {row -> row['path_to_BAF_LRR']}            // grab filepaths only
-                                     .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
+                                         .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
+                                         .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
                
         
 
@@ -202,7 +204,7 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            // PFB file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file.first(),                            // HMM file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
-                                plink_ch.sexfile.first(),          // Sexfile from metadata input 
+                                plink_ch.sexfile.first(),                                               // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                               )
         
