@@ -63,21 +63,6 @@ process buildSummary {
     """
 }
 
-process extractPlink {
-    input:
-    path plink2samplemetadata_tsv
-
-    output:
-    path 'sexfile.tsv', emit: sexfile
-    path 'trio.tsv', emit: triofile
-
-    script:
-    """
-    cut -f1,3 ${plink2samplemetadata_tsv} > 'sexfile.tsv'
-    cut -f1,4,5 ${plink2samplemetadata_tsv} > 'trio.tsv'
-    """
-
-}
 
 process mergeSampleMetadata {
     tag "merge sample level data"
@@ -149,6 +134,8 @@ params.report                   = false
 params.data_type                = "array"
 params.dataset_name             = ""
 params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
+params.batch_num                = -1 // for tuning batch sizes: default -1 means take all batches. 
+                                     // Any other number restricts the execution to N number of batches  
 
 
 workflow FORMAT_CNV {  
@@ -175,25 +162,52 @@ workflow FORMAT_CNV {
 
 }
 
+/*
+ Extracts elements from a string at indices from a given list.
+ Returns tab delimited string 
+ */
+def cutString(String line, List<Integer> cols){
+    def tokens = line.split('\t')
+    return tokens.getAt(cols).join('\t')
+}
+
 workflow {
     
     main:
 
     if (params.pipeline_mode == "full"){
         
-        sample_file_ch  = Channel.fromPath(params.sample_file)
+        log.info("Running Full pipeline on ${params.dataset_name}")
 
-        batch_ch = sample_file_ch.splitCsv(sep: "\t",  header: true)                       
+        sample_file_ch  = channel.fromPath(params.sample_file)
+
+        batch_ch = sample_file_ch.splitCsv(sep: "\t",  header: ['sampleID', 'path_to_BAF_LRR'])                       
                                  .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
-                                 .buffer( size : params.batch_size, remainder : true)              // split channel into batches  
+                                 .buffer( size : params.batch_size, remainder : true)              // split channel into batches
+                                 .take(params.batch_num)                                           // for tuning batch sizes: default -1 means take all batches
                
         
+        //extracting columns from metadata 
+        sex_file =  channel.fromPath(params.plink2samplemetadata_tsv).splitText(){ line -> cutString(line, [0,2]) } //pull 'SampleID' and 'Sex'
+                                                                     .collectFile( name: 'sexFile.tsv',
+                                                                                   sort: false,
+                                                                                   newLine: true)
+                                                                     .first()
 
-
-        plink_ch = extractPlink(params.plink2samplemetadata_tsv)
+        trio_file =  channel.fromPath(params.plink2samplemetadata_tsv).splitText(){ line -> cutString(line, [0,3,4])} //pull 'SampleID', 'MotherID' and 'FatherID'
+                                                                      .collectFile( name: 'trioFile.tsv',
+                                                                                    sort: false,
+                                                                                    newLine: true)
+                                                                      .first()
+        
        
         '''
-        PREPARE INPUTS for PennCNV
+        PREPARE INPUTS FOR PENNCNV
+
+        Will create: 
+            - HMM File for given tech
+            - PFB File 
+            - GC Model 
         '''
 
         PREPARE_PENNCNV_INPUTS ( sample_file_ch, 
@@ -210,7 +224,7 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            // PFB file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file.first(),                            // HMM file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
-                                plink_ch.sexfile.first(),                                               // Sexfile from metadata input 
+                                sex_file,                                                               // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                               )
         
@@ -276,7 +290,7 @@ workflow {
 
     // Run report only if requested
     if (params.report) {
-        trio_file = plink_ch.triofile
+        //trio_file = plink_ch.triofile
 
         MAKE_REPORT (    params.dataset_name,
                          params.plink2samplemetadata_tsv,

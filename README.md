@@ -2,154 +2,258 @@
 
 [Git Repository CNV-Caller](https://github.com/JacquemontLab/CNV-Caller)
 
-# Documentation of the CNV Calling Pipeline for Microarray
-This repository contains a bioinformatics pipeline for the discovery of copy number variants (CNVs).
-The workflow is implemented using Nextflow to ensure reproducibility and efficient execution.
+# CNV-Caller
+#### A nextflow pipeline for the discovery of copy number variants (CNVs) using Hidden Markov Model based CNV callers PennCNV and QuantiSNP. The pipeline utilizes B-Allele Frequency (BAF) and the Log-R Ratio (LRR) of probes on a standard genotyping array to impute CNV presence.
 
-## Pipeline Overview
-This repository provides a Nextflow-based workflow for identifying and annotating CNVs on human the **GRCh37** or **GRCh38** human reference genome.
+#### CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
 
 
-## Pipeline Versions / Modes
 
-1. **Full Pipeline**
+## Quick-Start
 
-   * Runs **PennCNV** and **QuantiSNP** from raw BAF/LRR files.
-   * Recommended when starting with raw genotype data and wanting end-to-end CNV detection.
-
-2. **Partial Pipeline**
-
-   * Starts from **PennCNV** and **QuantiSNP** merged outputs.
-   * Skips raw CNV calling, useful if CNV files are already generated.
-
-> Both modes share downstream processing steps such as CNV merging and reporting.
-
-
-## Prerequisites to Run the Pipeline
-
-### Software dependencies
-
-Refer to the template config files and adjust them to match your infrastructure.
-
-You need to pull the following containers:
-* docker://flobenhsj/quantisnp_penncnv:v2.3
-* docker://flobenhsj/cnv_caller_report:latest
-* docker://flobenhsj/duckdb_python:latest
-* docker://flobenhsj/compile_pfb:latest
-
-Required software:
-
-* **Nextflow** – workflow engine
-* **Docker** (Apptainer or Singularity) – to run containers
-* **bedtools** – for genomic interval operations such as CNV merging, overlap calculations, and annotation
-
-
-### Dataset-specific parameters
-* **dataset\_name**: Name of the dataset, used for directory and report naming.
-* **genome\_version**: Either **GRCh38** or **GRCh37**.
-
-
-### Specific Inputs to **Full Pipeline** (pipeline_mode=pipeline_full)
-
-* **plink2samplemetadata\_tsv**: A TSV file (with header) containing:
-
-```
-SampleID  Call_Rate  Sex  FatherID  MotherID
-```
-> Sex should be "male", "female", or "unknown". Samples with "unknown" gender will only have autosomal CNVs identified; sex chromosome CNVs will not be analyzed.
-> *FatherID* and *MotherID* are only required if `--report "true"` is used, to assess Mendelian precision as an indicator of data quality.
-
-* **list\_sample\_baflrrpath**: A TSV file (with header) containing:
-
-```
-SampleID  path_to_BAF_LRR
-```
-
-> The BAF/LRR file name should follow the format: **{SampleID}.BAF\_LRR.tsv**.
-
-* **batch\_size**: Number of batches to process.
-
-⚠️ **Important**: The `.hmm` file used by PennCNV in the **generate_hmm** process should match your data type. Pre-existing HMMs differ in probe density and signal characteristics:
-
-| HMM File    | Intended Data Type                | Notes                                                    |
-| ----------- | --------------------------------- | -------------------------------------------------------- |
-| `hhall.hmm` | High-density SNP arrays (general) | Captures broad allele patterns across multiple platforms |
-| `hh550.hmm` | Illumina HumanHap550 arrays       | Optimized for 550k probe density and distribution        |
-| `wgs.hmm`   | Whole-genome sequencing           | High-resolution data; dense and uniform coverage         |
-
-> Using the correct starting HMM ensures better modeling of CNV state transitions and improves CNV calling accuracy when training on your top-quality samples.
-
-
-#### BAF\_LRR File Format
-
-**{SampleID}.BAF\_LRR.tsv** files should have the following columns:
-
-```
-Name  Chr  Position  {SampleID}.Log R Ratio  {SampleID}.B Allele Freq
-```
-
-* `Chr` should be formatted as `"1"`–`"22"`, `"X"`, or `"Y"`.
-
-**Recommendations for SNP positions:**
-
-* It is highly recommended to have only unique SNP positions (i.e., no more than one SNP per genomic coordinate).
-
-From personal communication with the authors of QuantiSNP (Ioannis Ragoussis and Rui Li):
-
-> "At the end of the day, the tool integrates signals from different positions, so we need only one per genomic coordinate. Sometimes multiple probes are designed for the same SNP just in case one probe may fail. It is okay to keep the better-performing probe (best call rate). Hope that helps."
-
-From the PennCNV author Wang Kai:
-
-> "You can keep just one SNP to avoid potential issues. One easy way is simply to modify the PFB file to remove duplicated SNPs."
-
-
-### Specific Inputs to **Partial Pipeline** (pipeline_mode=pipeline_partial)
-
-* **penncnv\_calls\_path**: Path to PennCNV raw CNVs file (.txt)
-* **quantisnp\_calls\_path**: Path to QuantiSNP raw CNVs file (.txt)
-
-**Optional:**
-
-* **plink2samplemetadata\_tsv**: A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.
-* **penncnv\_qc\_path**: QC metrics from PennCNV (SampleID → LRR\_SD, BAF\_SD, WF).
-
-
-## Running the CNV Calling Pipeline
-
-Users on Compute Canada (CCDB, in the lab) are encouraged to refer directly to :
-
-### **Partial Pipeline**
+The pipeline can be run using the test profile and the images hosted on github. 
 
 ```bash
-sbatch /path/to/CNV-Caller/setup/ccdb/run_CNV_caller_light.sh \
-    --git_dir /path/to/CNV-Caller \
-    --dataset_name SPARK_Array_GRCh37 \
-    --genome_version GRCh37 \
-    --plink2samplemetadata_tsv /path/to/SPARK/sample_metadata_from_plink.tsv \
-    --penncnv_calls_path /path/to/SPARK/PennCNV_raw_calls.txt \
-    --quantisnp_calls_path /path/to/SPARK/QuantiSNP_raw_calls.txt \
-    --penncnv_qc_path /path/to/SPARK/PennCNV_QC.tsv \
-    [--report true|false]
+nextflow run https://github.com/JacquemontLab/CNV-Caller --profile test,apptainer
 ```
 
-### **Full Pipeline**
+# Input Parameters:
 
-```bash
-   sbatch /path/to/CNV-Caller/setup/ccdb/run_CNV_caller_full.sh \
-    --git_dir /path/to/CNV-Caller \
-          --dataset_name SPARK_Array_GRCh37 \
-          --genome_version GRCh37 \
-          --plink2samplemetadata_tsv file.tsv \
-          --list_sample_baflrrpath list.tsv \
-          [--batch_size 20] \
-          [--report true|false]
+
+## Base_Required
+
+Parameters Required for both __partial__ and __full__ runs.
+
+| Parameter | Description | Type | Default | Required | Hidden |
+|-----------|-----------|-----------|-----------|-----------|-----------|
+| `dataset_name` | Name of the dataset, used for directory and report naming. | `string` |  | True |  |
+| `pipeline_mode` | Choose to run from raw BAF/LRR files or raw PennCNV and Quantisnp calls.  Either full  or partial (accepted: `full`\|`partial`) | `string` | full | True |  |
+| `genome_version` | Human genome assembly version. (accepted: `GRCh38`\|`GRCh37`) | `string` | GRCh38 | True |  |
+| `plink2samplemetadata_tsv` | Sample metadata derived from plink. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| `string` |  | True |  |
+| `report` | Run summary statistics on all outputs. __Experimental feature__ | `boolean` |  | True |  |
+
+## Full_Run
+
+Parameters Required for both CNV calling and merging outputs.
+
+| Parameter | Description | Type | Default | Required | Hidden |
+|-----------|-----------|-----------|-----------|-----------|-----------|
+| `sample_file` | A TSV file containing the Sample ID and the absolute path to the BAF_LRR file. See README | `string` |  | True |  |
+| `batch_size` | Number of samples call CNVs in a single batch. | `string` | 64 | True |  |
+| `pfb_max_sample_size` | Adjust the number of samples to use to generate the pfb file for PennCNV | `integer` | 1000 | True |  |
+| `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | `string` | array | True |  |
+
+## Partial_Run
+
+For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CNVs with the minimal recommended filtering.
+
+| Parameter | Description | Type | Default | Required | Hidden |
+|-----------|-----------|-----------|-----------|-----------|-----------|
+| `quantisnp_calls_path` |  Path to QuantiSNP raw CNVs file (.txt) | `string` |  | True |  |
+| `penncnv_qc_path` | QC metrics from PennCNV (SampleID → LRR\_SD, BAF\_SD, WF) | `string` |  |  |  |
+| `penncnv_calls_path` | Path to PennCNV raw CNVs file (.txt) | `string` |  | True |  |
+
+
+### Parameter Details:
+
+  #### **plink2samplemetadata\_tsv**: A TSV file (with header) containing:
+  ```
+  SampleID  Call_Rate  Sex  FatherID  MotherID
+  ```
+  > Sex should be "male", "female", or "unknown". Samples with "unknown" gender will only have autosomal CNVs identified; sex chromosome CNVs will not be analyzed.
+
+  > *FatherID* and *MotherID* are only required if `--report "true"` is used, to assess Mendelian precision as an indicator of data quality.
+   
+   #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
+    
+    
+    SampleID  filePath
+    99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
+    99HI0700A /home/example/path/99HI0700A.BAF_LRR.tsv
+    99HI0697A /home/example/path/99HI0697A.BAF_LRR.tsv
+    
+  > The filenames should follow the above format: **{SampleID}.BAF\_LRR.tsv**.
+
+#### The corresponding BAF_LRR files should be tab-delimited and formatted to follow PennCNV's required input format eg:
+
+```
+Name	Chr	Position	{SampleID}.Log R Ratio  {SampleID}.B Allele Freq
+rs13072188	3	38411	-0.008173507	0.5777832
+rs9681213	3	41894	0.003111341	0.531952
+rs1516321	3	57010	-0.08156657	0.48049
+```
+Where {SampleID} matches the filename. Eg: _99HI0698.Log R Ratio_.
+
+`Chr` should be formatted as `"1"`–`"22"`, `"X"`, or `"Y"`.
+
+
+## Output:
+
+
+- **{dataset_name}**
+  - **calls_unfiltered**
+    - **penncnv**
+      - `PennCNV_CNV.tsv` : Formatted PennCNV called CNV calls (filtered for length >1bp) in TSV.
+      - `PennCNV_QC.tsv` : Quality control summary for PennCNV calls.
+      - `PennCNV_raw_calls.txt` : Original CNV call output from PennCNV.
+    - **quantisnp**
+      - `QuantiSNP_CNV.tsv` : Formatted QuantiSNP called CNV calls (filtered for length >1bp) in TSV.
+      - `QuantiSNP_raw_calls.txt` : Original CNV call output from QuantiSNP.
+  - `CNV_merged_dataset.tsv` : **Final dataset with merged CNVs** See **Merging Protocol**.
+  - **docs**
+    - `launch_report.txt` : Summary of the analysis run.
+    - `merged_cnv_qc.pdf` : QC report for the merged CNV dataset.
+    - `penncnv_unfilter_cnv_qc.pdf` : QC report for unfiltered PennCNV calls.
+    - `quantisnp_unfilter_cnv_qc.pdf` : QC report for unfiltered QuantiSNP calls.
+    - `sample_qc_report.pdf` : Sample-level QC metric report.
+  - `sampleDB.tsv` : **Sample database** containing metadata and QC status for all genotyped individuals.
+
+
+
+The `CNV_merged_dataset.tsv` fields are as follows:
+
+| **Column**      | **Description**                                                 |
+| --------------- | --------------------------------------------------------------- |
+| **SampleID**                    | Unique identifier of the sample.            |
+| **Chr**                         | Chromosome where the CNV is located.            |
+| **Start**                       | Start position of the CNV.            |
+| **End**                         | End position of the CNV.            |
+| **Type**                        | Type of CNV: `DEL` = deletion, `DUP` = duplication, `MIX` = mixed type (event includes both deletions and duplications, inferred from Copy\_Number states). |
+| **Length**                      | Length of the CNV in base pairs.            |
+| **Copy\_Number**                | Distinct copy number states observed among merged CNVs (e.g., 0, 1, 3, 4). Multiple values are separated by commas if differing between callers. |
+| **Confidence\_max**             | Maximum confidence score among merged CNVs (reflecting the strongest supporting evidence).            |
+| **Num\_Probes\_max**            | Maximum number of probes supporting the CNV across merged CNVs.            |
+| **Num\_Merged\_CNVs**           | Number of CNVs merged into this event.            |
+| **QuantiSNP\_Overlap**          | Fraction of the CNV region overlapping QuantiSNP calls.            |
+| **PennCNV\_Overlap**            | Fraction of the CNV region overlapping PennCNV calls.            |
+| **Two\_Algorithm\_Overlap**     | Fraction of the CNV region supported by both QuantiSNP and PennCNV.            |
+| **ProblematicRegions\_Overlap** | Overlap with problematic regions (Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and UCSC Problematic Regions), compiled from the UCSC Genome Browser (hgTables), for more details see section 'Problematic Regions'.|
+
+
+The `sampleDB.tsv` fields are as follows:
+
+| **Column**      | **Description**                                                 |
+| --------------- | --------------------------------------------------------------- |
+| **SampleID**   | Unique sample identifier from the PLINK dataset.                 |
+| **LRR\_mean**   | Mean Log R Ratio (from PennCNV output).                         |
+| **LRR\_median** | Median Log R Ratio (from PennCNV output).                       |
+| **LRR\_SD**     | Standard deviation of Log R Ratio (from PennCNV output).        |
+| **BAF\_mean**   | Mean B Allele Frequency (from PennCNV output).                  |
+| **BAF\_median** | Median B Allele Frequency (from PennCNV output).                |
+| **BAF\_SD**     | Standard deviation of B Allele Frequency (from PennCNV output). |
+| **BAF\_DRIFT**  | B Allele Frequency drift metric (from PennCNV output).          |
+| **WF**          | Waviness Factor (from PennCNV output).                          |
+| **GCWF**        | GC-corrected Waviness Factor (from PennCNV output).             |
+|*__COLUMNS OF `plink2samplemetadata_tsv`__*|  
+
+
+
+### Example Launch
+
+Use a parameter yaml file to specify parameters
+ eg:
+
+*__params.yaml__*
+```yaml
+dataset_name: My_Cohort
+genome_version: GRCh38
+plink2samplemetadata_tsv: /home/path_to/metadata.tsv
+sample_file: /home/path_to/sample_file.tsv
+batch_size: 180
+pfb_sample_size : 1000
+report : false
+pipeline_mode : full
+data_type : 'array'
 ```
 
+#### Configuration 
+Configuration of the pipeline is necessary to match the needs of your cluster and dataset. What's provided below is a template for launching on an HPC using SLURM job managment with access to the internet for container retrieval. 
 
-## CNV Calling in the Full Pipeline
+In this configuration the lead process is launched on local and the larger jobs are automatically queued on compute nodes.
 
-Within the pipeline, the GC model, the HMM profile and PFB files required by PennCNV are prepared.
-CNVs are then called per individual on autosomes and chromosome X (only if the sample’s sex is known) using the container `docker://flobenhsj/quantisnp_penncnv:v2.3` and the following tools:
+The two major processes are `cnv_calling` and `generate_pfb` which may require a lot of resources. In our example `180` samples are loaded in to a compute node with 192 cpus and 750G of memory for calling cnvs. Using `maxForks` we'll ask for 10 nodes to be allocated at once. Using this configuration will allow for `1800` samples to be processed at once. 
+
+*__example.config__*
+```nextflow
+
+executor.queueSize = 11
+process {
+    executor = 'local'
+    module = ['apptainer/1.3.5']
+ 
+    withLabel: cnv_calling {
+        executor = 'slurm'
+        time = { 3.hour * task.attempt }
+        memory = '750G'
+        cpus = 192
+        module = ['apptainer/1.3.5']
+        maxRetries = { task.exitStatus == 140 ? 4 : 1 }
+        maxForks = 10
+        errorStrategy = { task.exitStatus == 140 ? 'retry' : 'terminate' }
+        }
+
+    withName: generate_pfb {
+        executor = 'slurm'
+        module = ['apptainer/1.3.5']
+        time = { 1.hour * task.attempt }
+        cpus = 192
+        memory = '750G'
+        maxRetries = { task.exitStatus == 140 ? 4 : 1 }
+        errorStrategy = { task.exitStatus == 140 ? 'retry' : 'terminate' }
+        }
+
+    withLabel: Rmarkdown {
+        executor = 'slurm'
+        cpus = 32
+        memory = '112G'
+        module = ['apptainer/1.3.5']
+    }
+}
+
+```
+If compute nodes lack internet access, the containers can be cached elsewhere and absolute paths can be used for the required processes. The default config is as follows:
+
+*__nextflow.config__*
+```nextflow
+profiles {
+
+    apptainer {
+        apptainer.enabled = true
+        process  {
+            container = 'docker://ghcr.io/jacquemontlab/python_etl_packages:latest'
+        
+            withLabel: penncnv_quantisnp {
+                container = 'docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3'
+
+            }
+
+            withLabel: Rmarkdown {
+                container = 'docker://ghcr.io/jacquemontlab/cnv_caller_report:latest'
+
+            }
+        }
+    }
+}
+```
+Nextflow allows for deep configuration which makes pipelines portable to both cloud, HPC and local execution. See [https://www.nextflow.io/docs/latest/config.html](https://www.nextflow.io/docs/latest/config.html) for more details.
+
+
+To launch make sure to include custom configurations using the -c parameter.
+
+```
+nextflow run https://github.com/JacquemontLab/CNV-Caller -profile apptainer -c example.config -params_file params.yaml 
+```
+
+Or if downloaded:
+
+```
+nextflow run main.nf -profile apptainer -c example.config -params_file params.yaml
+```
+
+# Notes
+
+Within the pipeline, the GC model, the HMM profile and PFB files required by PennCNV are prepared. 
+CNVs are then called per individual on autosomes and chromosome X (only if the sample’s sex is known) using the container `docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3` and the following tools:
 
 ### PennCNV
 
@@ -187,6 +291,14 @@ perl detect_cnv.pl --test \
     ${BAF_LRR_Probes}
 ```
 
+ The `.hmm` file used by PennCNV in the **generate_hmm** process should match your data type. Pre-existing HMMs differ in probe density and signal characteristics. This can be modified using `data_type` parameter:
+
+| HMM File    | Intended Data Type                | Notes                                                    |`data_type`|
+| ----------- | --------------------------------- | -------------------------------------------------------- |-----------|
+| `hhall.hmm` | High-density SNP arrays (general) | Captures broad allele patterns across multiple platforms |`array`    | 
+| `hh550.hmm` | Illumina HumanHap550 arrays       | Optimized for 550k probe density and distribution        |           | 
+| `wgs.hmm`   | Whole-genome sequencing           | High-resolution data; dense and uniform coverage         |`wgs`      |
+
 ### QuantiSNP
 
 QuantiSNP ([Colella *et al.*, 2007](https://doi.org/10.1093/nar/gkm076))
@@ -214,7 +326,7 @@ quantisnp --chr ${chr} \
 ```
 
 
-## Paragraph method, by Florian Bénitière, 04/08/2025 : **CNV Merging process**
+### Paragraph method, by Florian Bénitière, 04/08/2025 : **CNV Merging process**
 
 Copy Number Variants (CNVs) were called using two programs: PennCNV ([Wang et al., 2007](http://www.genome.org/cgi/doi/10.1101/gr.6861907)) and QuantiSNP ([Colella et al., 2007](https://doi.org/10.1093/nar/gkm076)).
 
@@ -250,67 +362,6 @@ In addition, based on common practice in CNV detection studies (e.g., PennCNV an
 
 * **Call Rate \≥ 0.98**
 
-
-## Content of the dataset **CNV_merged_dataset.tsv**
-
-| **Column**      | **Description**                                                 |
-| --------------- | --------------------------------------------------------------- |
-| **SampleID**                    | Unique identifier of the sample.            |
-| **Chr**                         | Chromosome where the CNV is located.            |
-| **Start**                       | Start position of the CNV.            |
-| **End**                         | End position of the CNV.            |
-| **Type**                        | Type of CNV: `DEL` = deletion, `DUP` = duplication, `MIX` = mixed type (event includes both deletions and duplications, inferred from Copy\_Number states). |
-| **Length**                      | Length of the CNV in base pairs.            |
-| **Copy\_Number**                | Distinct copy number states observed among merged CNVs (e.g., 0, 1, 3, 4). Multiple values are separated by commas if differing between callers. |
-| **Confidence\_max**             | Maximum confidence score among merged CNVs (reflecting the strongest supporting evidence).            |
-| **Num\_Probes\_max**            | Maximum number of probes supporting the CNV across merged CNVs.            |
-| **Num\_Merged\_CNVs**           | Number of CNVs merged into this event.            |
-| **QuantiSNP\_Overlap**          | Fraction of the CNV region overlapping QuantiSNP calls.            |
-| **PennCNV\_Overlap**            | Fraction of the CNV region overlapping PennCNV calls.            |
-| **Two\_Algorithm\_Overlap**     | Fraction of the CNV region supported by both QuantiSNP and PennCNV.            |
-| **ProblematicRegions\_Overlap** | Overlap with problematic regions (Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and UCSC Problematic Regions), compiled from the UCSC Genome Browser (hgTables), for more details see section 'Problematic Regions'.|
-
-
-## Content of the dataset **sampleDB.tsv** if produced
-
-| **Column**      | **Description**                                                 |
-| --------------- | --------------------------------------------------------------- |
-| **SampleID**   | Unique sample identifier from the PLINK dataset.                 |
-| **LRR\_mean**   | Mean Log R Ratio (from PennCNV output).                         |
-| **LRR\_median** | Median Log R Ratio (from PennCNV output).                       |
-| **LRR\_SD**     | Standard deviation of Log R Ratio (from PennCNV output).        |
-| **BAF\_mean**   | Mean B Allele Frequency (from PennCNV output).                  |
-| **BAF\_median** | Median B Allele Frequency (from PennCNV output).                |
-| **BAF\_SD**     | Standard deviation of B Allele Frequency (from PennCNV output). |
-| **BAF\_DRIFT**  | B Allele Frequency drift metric (from PennCNV output).          |
-| **WF**          | Waviness Factor (from PennCNV output).                          |
-| **GCWF**        | GC-corrected Waviness Factor (from PennCNV output).             |
-|*__COLUMNS OF `plink2samplemetadata_tsv`__*|                            |	
-
-
-## Other output in results
-
-- **{dataset_name}**
-  - **calls_unfiltered**
-    - **penncnv**
-      - `PennCNV_CNV.tsv` : Formatted PennCNV called CNV calls (filtered for length >1bp) in TSV.
-      - `PennCNV_QC.tsv` : Quality control summary for PennCNV calls.
-      - `PennCNV_raw_calls.txt` : Original CNV call output from PennCNV.
-    - **quantisnp**
-      - `QuantiSNP_CNV.tsv` : Formatted QuantiSNP called CNV calls (filtered for length >1bp) in TSV.
-      - `QuantiSNP_raw_calls.txt` : Original CNV call output from QuantiSNP.
-  - `CNV_merged_dataset.tsv` : **Final dataset with merged CNVs** following the protocol above.
-  - **docs**
-    - `launch_report.txt` : Summary of the analysis run.
-    - `merged_cnv_qc.pdf` : QC report for the merged CNV dataset.
-    - `penncnv_unfilter_cnv_qc.pdf` : QC report for unfiltered PennCNV calls.
-    - `quantisnp_unfilter_cnv_qc.pdf` : QC report for unfiltered QuantiSNP calls.
-    - `sample_qc_report.pdf` : Sample-level QC metric report.
-  - `sampleDB.tsv` : **Sample database** containing metadata and QC status for all genotyped individuals.
-
-
-## Notes
-
 ### Problematic Regions
 
 This region regroups multiple tables from UCSC: Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and Problematic Regions from UCSC.
@@ -325,6 +376,16 @@ For details, please refer to the file CNV-Caller/resources/Genome_Regions/README
 - For QuantiSNP, default files such as **levels.dat** and **params.dat** are used (available in the Docker docker://flobenhsj/quantisnp_penncnv:v2.3):
 [Git QuantiSNP](https://github.com/cwcyau/quantisnp)
 
-- Resource requirements of each step must be adjusted depending on the quantity of data analyzed.
 
-- Currently, only a Nextflow workflow has been written.
+**Recommendations for SNP positions:**
+
+* It is recommended to have only unique SNP positions (i.e., no more than one SNP per genomic coordinate).
+
+From personal communication with the authors of QuantiSNP (Ioannis Ragoussis and Rui Li):
+
+> "At the end of the day, the tool integrates signals from different positions, so we need only one per genomic coordinate. Sometimes multiple probes are designed for the same SNP just in case one probe may fail. It is okay to keep the better-performing probe (best call rate). Hope that helps."
+
+From the PennCNV author Wang Kai:
+
+> "You can keep just one SNP to avoid potential issues. One easy way is simply to modify the PFB file to remove duplicated SNPs."
+

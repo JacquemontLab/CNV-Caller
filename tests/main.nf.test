@@ -6,13 +6,13 @@ nextflow_pipeline {
     name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
     script "main.nf"
 
-    test("Full run should run without failures and produce final outputs") {
+    test("Full run should run without failures and produce final outputs and have the correct number of processes") {
 
         when {
             params {
              plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
-             sample_file = "${projectDir}/tests/samplefile.tsv"
-             batch_size = 3
+             sample_file = "${projectDir}/tests/sampleFile.tsv"
+             batch_size = 2
              genome_version = "GRCh38"
              dataset_name = "T1"
              report = false
@@ -24,6 +24,7 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
+            assert workflow.trace.tasks().size() == 9 //for two batches
             assert file("$launchDir/results/T1/CNV_merged_dataset.tsv").exists()
             assert file("$launchDir/results/T1/sampleDB.tsv").exists()
             assert file("$launchDir/results/T1/docs/launch_report.txt").exists()
