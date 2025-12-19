@@ -1,4 +1,4 @@
-[![Jacquemont's Lab Header](labheader.png)](https://www.jacquemont-lab.org/)
+[![Jacquemont's Lab Header](img/labheader.png)](https://www.jacquemont-lab.org/)
 
 [Git Repository CNV-Caller](https://github.com/JacquemontLab/CNV-Caller)
 
@@ -8,6 +8,11 @@
 #### CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
 
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/CNV-Caller_dag_dark_full.png">
+  <source media="(prefers-color-scheme: light)" srcset="img/CNV-Caller_dag_light_full.png">
+  <img alt="Fallback image description" src="img/CNV-Caller_dag_light_full.png" style="max-width:55%; height:auto;">
+</picture>
 
 ## Quick-Start
 
