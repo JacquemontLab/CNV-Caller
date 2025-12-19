@@ -72,15 +72,18 @@ process generate_hmm {
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
     path pfb_file                    // PFB file (Population Frequency of B Allele)
     val data_type
-
+    
     output:
     path 'hmm_trained.hmm'      // HMM file
 
     script:
     """
     # take first 10 lines (sample paths) from the list
-    # head -n 10 "$list_best_BAF_LRR_Probes" > list_baf_lrr.txt 
+
     echo ${list_best_BAF_LRR_Probes} | cut -d " " -f1-10 | tr " " "\\n" | tr -d " " > list_baf_lrr.txt
+    grep '\\.gz\$' list_baf_lrr.txt | parallel -j ${task.cpus} gunzip {} -f 
+    find . -maxdepth 1 -iname "*.baf_lrr.tsv" -printf '%f\\n' > list_baf_lrr.txt
+  
 
     # We start from a pre-existing HMM:
     #   - hhall.hmm  -> general high-density SNP arrays
@@ -155,7 +158,6 @@ workflow PREPARE_PENNCNV_INPUTS {
         gc_content_windows
         pfb_max_sample_size
         data_type
-
         
     main:
         // Step 1. Identify the top X samples by call rate.
@@ -165,16 +167,17 @@ workflow PREPARE_PENNCNV_INPUTS {
             pfb_max_sample_size
         )
 
-        best_sample_ch = getBestSample.out.splitCsv().collect()
+        // Turn a txt file of paths into a single nextflow list
+        best_sample_list = getBestSample.out.splitCsv().collect()
 
         // Step 2. Generate a PFB file.
         pfb_file = generate_pfb(
-            best_sample_ch 
+            best_sample_list 
         )
 
         // Step 3. Generate HMM from the top samples.
         hmm_file = generate_hmm(
-            best_sample_ch ,
+            best_sample_list ,
             pfb_file,
             data_type
         )

@@ -78,13 +78,14 @@ process mergeSampleMetadata {
     """
     duckdb -c "
     COPY (
-        SELECT 
-            CAST(b.SampleID AS VARCHAR) AS SampleID, 
-            b.* EXCLUDE SampleID,
-            a.* EXCLUDE SampleID
-        FROM read_csv_auto('$penncnv_qc', sep='\t', header=true) b
-        LEFT JOIN read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true) a
-        ON CAST(b.SampleID AS VARCHAR) = CAST(a.SampleID AS VARCHAR)
+        SELECT
+             CAST(meta.SampleID AS VARCHAR) AS SampleID,
+             meta.* EXCLUDE SampleID,
+             pennqc.* EXCLUDE SampleID
+         FROM read_csv_auto('$penncnv_qc', sep='\t', header=true) AS pennqc
+         RIGHT JOIN read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true) AS meta
+         ON CAST(pennqc.SampleID AS VARCHAR) = CAST(meta.SampleID AS VARCHAR)
+
     )  TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
     "
     """
@@ -183,7 +184,7 @@ workflow {
 
         batch_ch = sample_file_ch.splitCsv(sep: "\t",  header: ['sampleID', 'path_to_BAF_LRR'])                       
                                  .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
-                                 .buffer( size : params.batch_size, remainder : true)              // split channel into batches
+                                 .buffer( size : params.batch_size, remainder : true)              // split channel into batches of nextflow lists
                                  .take(params.batch_num)                                           // for tuning batch sizes: default -1 means take all batches
                
         

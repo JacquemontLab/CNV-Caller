@@ -67,7 +67,7 @@ For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CN
    #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
     
     
-    SampleID  filePath
+
     99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
     99HI0700A /home/example/path/99HI0700A.BAF_LRR.tsv
     99HI0697A /home/example/path/99HI0697A.BAF_LRR.tsv
