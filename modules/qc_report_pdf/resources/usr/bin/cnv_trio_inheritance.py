@@ -80,6 +80,11 @@ elif ".tsv" not in suffix:
 
 # +
 family_info = pl.scan_csv(PEDIGREE_FILE, separator="\t",infer_schema_length=1000000)
+family_info = family_info.with_columns([
+    pl.col("SampleID").cast(pl.Utf8),
+    pl.col("FatherID").cast(pl.Utf8),
+    pl.col("MotherID").cast(pl.Utf8)
+])
 
 #load CNV lazily
 if TYPE_COL:
@@ -106,6 +111,7 @@ else:
         df_cnv = pl.scan_parquet(FILE_CNV)
         df_cnv = df_cnv.with_columns(pl.col("Chr").cast(pl.Categorical))
         
+df_cnv = df_cnv.with_columns(pl.col("SampleID").cast(pl.Utf8))
 
 print("Filtering for trios that are completely found in the cnv table...")
 
