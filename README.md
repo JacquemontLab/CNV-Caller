@@ -5,7 +5,7 @@
 # CNV-Caller
 #### A nextflow pipeline for the discovery of copy number variants (CNVs) using Hidden Markov Model based CNV callers PennCNV and QuantiSNP. The pipeline utilizes B-Allele Frequency (BAF) and the Log-R Ratio (LRR) of probes on a standard genotyping array to impute CNV presence.
 
-#### CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
+ CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
 
 
 <picture>
@@ -47,6 +47,7 @@ Parameters Required for both CNV calling and merging outputs.
 | `batch_size` | Number of samples call CNVs in a single batch. | `string` | 64 | True |  |
 | `pfb_max_sample_size` | Adjust the number of samples to use to generate the pfb file for PennCNV | `integer` | 1000 | True |  |
 | `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | `string` | array | True |  |
+| `batch_num` | Constrict the number of batches to execute. Useful for tuning batch sizes and node configurations without running the whole dataset. | `integer` | -1 (all) | True | | 
 
 ## Partial_Run
 

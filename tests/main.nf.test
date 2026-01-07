@@ -6,8 +6,7 @@ nextflow_pipeline {
     name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
     script "main.nf"
 
-    test("Full run should run without failures and produce final outputs and have the correct number of processes.
-    SampleDB should return with the same number of samples given.") {
+    test("Full run should run without failures and produce final outputs and have the correct number of processes.SampleDB should return with the same number of samples given.") {
 
         when {
             params {
@@ -25,7 +24,7 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-            assert workflow.trace.tasks().size() == 10 //for three batches
+            assert workflow.trace.tasks().size() == 11 //for three batches
             assert file("$launchDir/results/T1/CNV_merged_dataset.tsv").exists()
             assert file("$launchDir/results/T1/sampleDB.tsv").exists()
             assert file("$launchDir/results/T1/docs/launch_report.txt").exists()

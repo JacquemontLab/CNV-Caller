@@ -118,6 +118,21 @@ process formatRawCNV {
     """
 }
 
+process extractPlink {
+    input:
+    path plink2samplemetadata_tsv
+
+    output:
+    path 'sexfile.tsv', emit: sexfile
+    path 'trio.tsv', emit: triofile
+
+    script:
+    """
+    cut -f1,3 ${plink2samplemetadata_tsv} > 'sexfile.tsv'
+    cut -f1,4,5 ${plink2samplemetadata_tsv} > 'trio.tsv'
+    """
+}
+
 
 
 
@@ -163,15 +178,6 @@ workflow FORMAT_CNV {
 
 }
 
-/*
- Extracts elements from a string at indices from a given list.
- Returns tab delimited string 
- */
-def cutString(String line, List<Integer> cols){
-    def tokens = line.split('\t')
-    return tokens.getAt(cols).join('\t')
-}
-
 workflow {
     
     main:
@@ -188,18 +194,7 @@ workflow {
                                  .take(params.batch_num)                                           // for tuning batch sizes: default -1 means take all batches
                
         
-        //extracting columns from metadata 
-        sex_file =  channel.fromPath(params.plink2samplemetadata_tsv).splitText(){ line -> cutString(line, [0,2]) } //pull 'SampleID' and 'Sex'
-                                                                     .collectFile( name: 'sexFile.tsv',
-                                                                                   sort: false,
-                                                                                   newLine: true)
-                                                                     .first()
-
-        trio_file =  channel.fromPath(params.plink2samplemetadata_tsv).splitText(){ line -> cutString(line, [0,3,4])} //pull 'SampleID', 'MotherID' and 'FatherID'
-                                                                      .collectFile( name: 'trioFile.tsv',
-                                                                                    sort: false,
-                                                                                    newLine: true)
-                                                                      .first()
+        plink_ch = extractPlink(params.plink2samplemetadata_tsv)
         
        
         '''
@@ -225,7 +220,7 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file.first(),                            // PFB file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file.first(),                            // HMM file, passing into value channel using first()
                                 PREPARE_PENNCNV_INPUTS.out.gc_model.first(),                            // GC model
-                                sex_file,                                                               // Sexfile from metadata input 
+                                plink_ch.sexfile.first(),                                              // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                               )
         
@@ -295,7 +290,7 @@ workflow {
 
         MAKE_REPORT (    params.dataset_name,
                          params.plink2samplemetadata_tsv,
-                         trio_file,
+                         plink_ch.triofile,
                          penncnv_qc,
                          penncnv_cnv_raw,
                          quantisnp_cnv_raw,
