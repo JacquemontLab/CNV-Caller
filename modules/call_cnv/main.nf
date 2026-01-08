@@ -11,16 +11,17 @@ nextflow.enable.dsl=2
 
 // Define the process to run CNV calling
 process callBatchCNVs {
+    label "penncnv_quantisnp"
     label "cnv_calling"
 
     input:
-    val BAF_LRR_Probes
+    path BAF_LRR_Probes
     path pfb_file
     path hmm_file
     path gcmodel_file
     path sexfile
     val genome_version
-
+   
     output:
     path "*.penncnv.qc",        emit: penncnv_qc_raw
     path "*.PennCNV_QC.tsv",    emit: penncnv_qc
@@ -32,8 +33,15 @@ process callBatchCNVs {
 
     script:
     """
-    # Turn the nextflow variable into lines of a file
-    echo ${BAF_LRR_Probes} | sed 's/[][]//g' | tr ',' '\\n' | tr -d " " > batch_list.txt
+    #Gunzip any files that are zipped in the staged dir
+    
+    echo "Starting decompression any gzipped files"
+    timedev -v find . -maxdepth 1 -name "*.gz"  | parallel -j ${task.cpus} gunzip -f {}
+    echo "Decompression complete."
+
+    # pass all files into a list_file
+    find . -maxdepth 1 -iname "*.baf_lrr.tsv" -printf '%f\\n' > batch_list.txt
+  
 
     # Default parameters avalable in the docker:
     chr="1:23"
@@ -56,7 +64,7 @@ process callBatchCNVs {
 }
 
 
-workflow  CALL_CNV_PARALLEL {
+workflow  CALL_CNV {
     take:
     list_baflrr_path         //file containing a list of filepaths to probe files. Value Channel
     pfb_file                 //pfb file generated from prepare_penncnv_params
@@ -64,6 +72,7 @@ workflow  CALL_CNV_PARALLEL {
     gc_content_windows       //gc model generated from prepare_penncnv_params
     sexfile                  //plink data extracted using extract_plink_data
     genome_version           //resource directory pointing to per-chromosome 1k binned gc content regions
+
 
     main:
 

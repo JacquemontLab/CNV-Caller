@@ -1,0 +1,62 @@
+---
+config:
+  layout: elk
+
+---
+flowchart TB
+ subgraph subGraph0["Full Pipeline params"]
+        n7["sample_file.tsv"]
+        n8["plink2SampleMetadata.tsv"]
+  end
+ subgraph publish["OUTPUT"]
+        v46["RAW CNV"]
+        n13["sampleDB.tsv"]
+        n12["CNV_merged_dataset.tsv"]
+  end
+ subgraph subGraph8[" "]
+        batch_cnv["batch_cnv"]
+        subGraph0
+        v13(["Compile PFB"])
+        v20(["mergeSampleMetadata"])
+        v40(["MAKE_REPORT"])
+        n1(["Train HMM"])
+        n5["Split _N_ Batches"]
+        n4["collectFile"]
+        v33(["MERGE_CNV_CALLS"])
+  end
+ subgraph s1["REPORTS"]
+        n9["PROCESSED CNV"]
+        n10["RAW CNV"]
+        n11["SAMPLE QC"]
+  end
+ subgraph batch_cnv["_M_ Parallel CNV Calls"]
+        n3(["PennCNV"])
+        n2(["QuantiSNP"])
+  end
+    v13 --- n3
+    n1 --- n3
+    n3 L_n3_n4_0@--> n4
+    n2 L_n2_n4_0@--> n4
+    n4 --> v46
+    n4 --- v33 & v40 & v20
+    n5 L_n5_batch_cnv_0@--> batch_cnv
+    n7 --- v13 & n1 & n5
+    n8 --- v20 & v13
+    v40 --> n9 & n10 & n11
+    v20 --> n13
+    v33 --> n12
+
+    n7@{ icon: "fa:file-lines", pos: "t", h: 60}
+    n8@{ icon: "fa:file-lines", pos: "t", h: 60}
+    v46@{ shape: docs}
+    n13@{ icon: "fa:file-lines", pos: "b"}
+    n12@{ icon: "fa:file-lines", pos: "b"}
+    n5@{ shape: priority}
+    n4@{ shape: manual-file}
+    n9@{ icon: "fa:file-pdf", pos: "b"}
+    n10@{ icon: "fa:file-pdf", pos: "b"}
+    n11@{ icon: "fa:file-pdf", pos: "b"}
+
+    L_n3_n4_0@{ animation: slow } 
+    L_n2_n4_0@{ animation: slow } 
+    L_n5_batch_cnv_0@{ animation: fast }

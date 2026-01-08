@@ -45,7 +45,7 @@ process getBestSample {
 
 // Step 2: Generate PFB (Population Frequency of B Allele) from selected samples
 process generate_pfb {
-    tag "generate_pfb"
+
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
@@ -55,7 +55,8 @@ process generate_pfb {
 
     script:
     """
-    compile_pfb.py  ${list_best_BAF_LRR_Probes} pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
+    echo ${list_best_BAF_LRR_Probes} | tr " " "\\n" | tr -d " " > batch_list.txt
+    compile_pfb.py  batch_list.txt pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
     """
     }
 
@@ -64,19 +65,25 @@ process generate_pfb {
 
 // Step 3: Generate HMM from the first 10 best samples
 process generate_hmm {
-    tag "generate_hmm"
+    tag "building hmm model from default ${data_type} model"
+    label "penncnv_quantisnp"
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
     path pfb_file                    // PFB file (Population Frequency of B Allele)
-
+    val data_type
+    
     output:
     path 'hmm_trained.hmm'      // HMM file
 
     script:
     """
     # take first 10 lines (sample paths) from the list
-    head -n 10 "$list_best_BAF_LRR_Probes" > list_baf_lrr.txt
+
+    echo ${list_best_BAF_LRR_Probes} | cut -d " " -f1-10 | tr " " "\\n" | tr -d " " > list_baf_lrr.txt
+    grep '\\.gz\$' list_baf_lrr.txt | parallel -j ${task.cpus} gunzip {} -f 
+    find . -maxdepth 1 -iname "*.baf_lrr.tsv" -printf '%f\\n' > list_baf_lrr.txt
+  
 
     # We start from a pre-existing HMM:
     #   - hhall.hmm  -> general high-density SNP arrays
@@ -87,9 +94,18 @@ process generate_hmm {
     #   - SNP arrays have fewer probes and noisier signals (hhall, hh550)
     #   - WGS has dense, uniform coverage (wgs)
     # Using the correct starting HMM improves CNV calling accuracy.
+
+    if [[ "${data_type}" == "array"  ]];then
+        model="hhall.hmm"
+    elif [[ "${data_type}"  == "wgs" ]];then
+        model="wgs.hmm"
+    else
+        echo "Invalid datatype. Use either 'array' or 'wgs'."
+        exit 1 
+    fi
     
     /usr/local/bin/timedev penncnv --train \
-        --hmmfile /usr/local/PennCNV-1.0.5/lib/wgs.hmm \
+        --hmmfile "/usr/local/PennCNV-1.0.5/lib/\$model"  \
         --pfbfile "$pfb_file" \
         --listfile list_baf_lrr.txt \
         --output hmm_trained
@@ -141,7 +157,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         plink2samplemetadata_output
         gc_content_windows
         pfb_max_sample_size
-
+        data_type
         
     main:
         // Step 1. Identify the top X samples by call rate.
@@ -151,15 +167,19 @@ workflow PREPARE_PENNCNV_INPUTS {
             pfb_max_sample_size
         )
 
+        // Turn a txt file of paths into a single nextflow list
+        best_sample_list = getBestSample.out.splitCsv().collect()
+
         // Step 2. Generate a PFB file.
         pfb_file = generate_pfb(
-            getBestSample.out
+            best_sample_list 
         )
 
         // Step 3. Generate HMM from the top samples.
         hmm_file = generate_hmm(
-            getBestSample.out,
-            pfb_file
+            best_sample_list ,
+            pfb_file,
+            data_type
         )
 
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.

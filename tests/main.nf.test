@@ -1,0 +1,89 @@
+
+//to launch the test on local :
+// nf-test test tests/main.nf.test --profile apptainer,local
+nextflow_pipeline {
+
+    name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
+    script "main.nf"
+
+    test("Full run should run without failures and produce final outputs and have the correct number of processes.SampleDB should return with the same number of samples given.") {
+
+        when {
+            params {
+             plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+             sample_file = "${projectDir}/tests/sampleFile.tsv"
+             batch_size = 2
+             genome_version = "GRCh38"
+             dataset_name = "T1"
+             report = false
+             pfb_max_sample_size = 3
+             outDir = "results/tests"
+             data_type = "array"
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.trace.tasks().size() == 11 //for three batches
+            assert file("$launchDir/results/T1/CNV_merged_dataset.tsv").exists()
+            assert file("$launchDir/results/T1/sampleDB.tsv").exists()
+            assert file("$launchDir/results/T1/docs/launch_report.txt").exists()
+            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_CNV.tsv").exists()
+            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_QC.tsv").exists()
+            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
+            assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
+            assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
+            assert file("$launchDir/results/T1/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() 
+        }
+
+    }
+
+    test("Partial run should exit without errors") {
+
+        when {
+            params {
+             plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+             penncnv_calls_path = "${projectDir}/tests/partial/calls_unfiltered/penncnv/PennCNV_raw_calls.txt"
+             quantisnp_calls_path = "${projectDir}/tests/partial/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt"
+             penncnv_qc_path = "${projectDir}/tests/partial/PennCNV_QC.tsv"
+             genome_version = "GRCh38"
+             dataset_name = "T2"
+             report = false
+             outDir = "results/tests"
+             pipeline_mode = "partial"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+
+    }
+
+
+//   name "T2:Test Full Pipeline Workflow main.nf with report"
+//  script "main.nf"
+
+//   test("Should run without failures ") {
+
+//       when {
+//           params {
+//            plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+//            list_sample_baflrrpath = "${projectDir}/tests/samplefile.tsv"
+//            batch_size = 3
+//            genome_version = "GRCh38"
+//           dataset_name = "T2"
+//          report = true
+//             pfb_max_sample_size = 3
+//             outDir = "results/tests"
+//            }
+//        }
+//
+//        then {
+//            assert workflow.success
+//
+//        }
+
+//    }
+
+}

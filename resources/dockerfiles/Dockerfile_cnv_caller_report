@@ -6,7 +6,6 @@ LABEL author="Ben C"
 LABEL version="1.0"
 LABEL description="Micromamba-based container with R and requested R packages"
 
-# Switch to root to install system packages
 USER root
 
 # Install build tools, system dependencies, and ps command
@@ -31,7 +30,6 @@ RUN set -eux && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Switch back to default micromamba user
 USER $MAMBA_USER
 
 # Install R and R packages via micromamba
@@ -51,8 +49,6 @@ RUN micromamba install -y -n base -c conda-forge \
 ENV PATH=/opt/conda/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/conda/lib:$LD_LIBRARY_PATH
 
-# Set working directory
-WORKDIR /opt/compile_pfb
 
 # Default command
 CMD ["bash"]

@@ -19,12 +19,16 @@ test_data/
 #Ignore all logs
 *log
 
-
-#Dataspell
+#ignore IDEs
 .idea/
+.vscode/
+
+#ignore top-level nextflow run-time directories
 results/
 work/
-list_baflrr_path.txt
 
-#yaml parameters file
-*.yaml
+#ignore unit-test dir
+.nf-test
+tests/sampleFile.tsv
+
+

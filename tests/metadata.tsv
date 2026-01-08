@@ -1,0 +1,4 @@
+SampleID	Call_Rate	Sex	FatherID	MotherID
+99HI0698C	1	male	NA	NA
+99HI0697A	1	female	NA	NA
+99HI0700A	1	unknown	99HI0698C	99HI0697A
