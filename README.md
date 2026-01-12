@@ -370,7 +370,7 @@ In addition, based on common practice in CNV detection studies (e.g., PennCNV an
 
 ### Previous implementation
 Our lab used previous versions of the CNV calling described in the following references:
-* Effects of gene dosage on cognitive ability: A function-based association study across brain and non-brain processes. Huguet et al, 2024, Cell Genomics [https://doi.oirg/10.1016/j.xgen.2024.100721](https://doi.oirg/10.1016/j.xgen.2024.100721)
+* Effects of gene dosage on cognitive ability: A function-based association study across brain and non-brain processes. Huguet et al, 2024, Cell Genomics [https://doi.org/10.1016/j.xgen.2024.100721](https://doi.org/10.1016/j.xgen.2024.100721)
 * Measuring and Estimating the Effect Sizes of Copy Number Variants on General Intelligence in Community-Based Samples. Huguet et al, 2021, Molecular Psychiatry [https://doi.org/10.1038/s41380-020-00985-z](https://doi.org/10.1038/s41380-020-00985-z)
 * Measuring and Estimating the Effect Sizes of Copy Number Variants on General Intelligence in Community-Based Samples. Huguet et al, 2018, JAMA Psychiatry [https://doi.org/10.1001/jamapsychiatry.2018.0039](https://doi.org/10.1001/jamapsychiatry.2018.0039)
 
