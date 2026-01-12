@@ -367,7 +367,7 @@ The quality filters used were:
 In addition, based on common practice in CNV detection studies (e.g., PennCNV and Illumina genotyping guidelines), we recommend applying a filter on the call rate, although the threshold may be adjusted depending on the cohort:
 
 * **Call Rate \≥ 0.98**
-* 
+
 ### Previous implementation
 Our lab used previous versions of the CNV calling described in the following references:
 * Effects of gene dosage on cognitive ability: A function-based association study across brain and non-brain processes. Huguet et al, 2024, Cell Genomics [https://doi.oirg/10.1016/j.xgen.2024.100721](https://doi.oirg/10.1016/j.xgen.2024.100721)
