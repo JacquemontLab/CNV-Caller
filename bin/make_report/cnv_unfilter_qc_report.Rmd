@@ -103,7 +103,7 @@ child_cnv <- child_cnv %>% mutate(length_bin = cut(Length, breaks = breaks, labe
 \newpage
 
 ## Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
-*Note: bins with fewer than 1000 CNVs were excluded from the analysis.*
+*Note: bins with fewer than 100 CNVs were excluded from the analysis.*
 
 \vspace{1cm}
 
@@ -125,7 +125,7 @@ suppressWarnings({
       
       var_sym <- sym(variable_x)  # convert string to symbol
       
-      min_bin_size <- 1000
+      min_bin_size <- 100
       max_bins <- 20
       
       data_set <- data_set %>%
