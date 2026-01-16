@@ -10,7 +10,6 @@ include { MERGE_CNV_CALLS        } from './modules/merge_cnv_calls'
 include { MAKE_REPORT            } from './modules/make_report'
 
 
-
 process buildSummary {
     
     input:
