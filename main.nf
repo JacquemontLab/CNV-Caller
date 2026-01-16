@@ -268,7 +268,6 @@ workflow {
 
     
     } else if (params.pipeline_mode == "partial") {
-        
         log.info("Running Partial pipeline on ${params.dataset_name}")
         
        FORMAT_CNV (    
