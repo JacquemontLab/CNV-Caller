@@ -15,7 +15,7 @@ nextflow.enable.dsl=2
 
 // Step 1: Select the X samples with the highest call rate
 process getBestSample {
-    tag "get ${pfb_max_sample_size} best samples"
+    tag "Get ${pfb_max_sample_size} best samples"
 
     input:
     path plink2samplemetadata_output    // File with sample ID, call rate, and imputed sex
@@ -64,7 +64,7 @@ process generate_pfb {
 
 // Step 3: Generate HMM from the first 10 best samples
 process generate_hmm {
-    tag "building hmm model from default ${data_type} model"
+    tag "Building hmm model from default ${data_type} model"
     label "penncnv_quantisnp"
 
     input:
@@ -173,8 +173,9 @@ workflow PREPARE_PENNCNV_INPUTS {
         )
 
         // Step 3. Generate HMM from the top samples.
+        best10_sample_list = getBestSample.out.splitCsv().take(10).collect()
         hmm_file = generate_hmm(
-            best_sample_list ,
+            best10_sample_list ,
             pfb_file,
             data_type
         )
