@@ -19,7 +19,7 @@ nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,appta
 
 
 
-
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,apptainer
 
 
 

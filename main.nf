@@ -266,7 +266,7 @@ workflow {
     
     } else if (params.pipeline_mode == "partial") {
         
-        log.info("Running Full pipeline on ${params.dataset_name}")
+        log.info("Running Partial pipeline on ${params.dataset_name}")
         
        FORMAT_CNV (    
                        file(params.penncnv_calls_path),
