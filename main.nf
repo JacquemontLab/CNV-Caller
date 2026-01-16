@@ -146,22 +146,27 @@ process extractPlink {
 
 
 
-//Default params
+// Default params
 params.pipeline_mode            = "full"
+params.plink2samplemetadata_tsv = ""
+params.report                   = false
+params.genome_version           = "GRCh38"
+params.dataset_name             = ""
+params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
+
+// Full specific
 params.sample_file              = ""
+params.pfb_max_sample_size      = 1000
+params.data_type                = "array"
+params.batch_size               = 64
+params.batch_num                = -1 // for tuning batch sizes: default -1 means take all batches. 
+                                     // Any other number restricts the execution to N number of batches  
+
+
+// Partial specific
 params.penncnv_qc_path          = ""
 params.penncnv_calls_path       = ""
 params.quantisnp_calls_path     = ""
-params.plink2samplemetadata_tsv = ""
-params.genome_version           = "GRCh38"
-params.batch_size               = 64
-params.pfb_max_sample_size      = 1000
-params.report                   = false
-params.data_type                = "array"
-params.dataset_name             = ""
-params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
-params.batch_num                = -1 // for tuning batch sizes: default -1 means take all batches. 
-                                     // Any other number restricts the execution to N number of batches  
 
 
 workflow FORMAT_CNV {  
