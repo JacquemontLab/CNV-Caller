@@ -114,7 +114,7 @@ elif [[ "$mode" == "parallel" ]]; then
 
   export sexfile pfb gcmodel chr hmm_file levels config gcdir PATH
 
-  cat "$batch_list" | parallel -j "$cpus" --eta --line-buffer '
+  cat "$batch_list" | parallel -j "$cpus" --line-buffer '
     file={}
     sample_id=$(basename "$file" | cut -d "." -f1)
     echo "🔄 Processing $sample_id"
