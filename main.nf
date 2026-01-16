@@ -162,7 +162,6 @@ params.batch_size               = 64
 params.batch_num                = -1 // for tuning batch sizes: default -1 means take all batches. 
                                      // Any other number restricts the execution to N number of batches  
 
-
 // Partial specific
 params.penncnv_qc_path          = ""
 params.penncnv_calls_path       = ""
