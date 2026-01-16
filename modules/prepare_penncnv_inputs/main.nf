@@ -46,7 +46,6 @@ process getBestSample {
 // Step 2: Generate PFB (Population Frequency of B Allele) from selected samples
 process generate_pfb {
 
-
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
 
@@ -116,8 +115,6 @@ process generate_hmm {
 
 // Step 4: Create a GC model file by mapping GC content to SNPs using genomic windows
 process generate_gcmodel {
-    tag "generate_gcmodel"
-
 
     input:
     path gc_content_windows // GC content by genomic window (e.g., from precomputed genome-wide scan)

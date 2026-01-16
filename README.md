@@ -3,10 +3,56 @@
 [Git Repository CNV-Caller](https://github.com/JacquemontLab/CNV-Caller)
 
 # CNV-Caller
-#### A nextflow pipeline for the discovery of copy number variants (CNVs) using Hidden Markov Model based CNV callers PennCNV and QuantiSNP. The pipeline utilizes B-Allele Frequency (BAF) and the Log-R Ratio (LRR) of probes on a standard genotyping array to impute CNV presence.
+#### A nextflow pipeline for the discovery of copy number variants (CNVs) using Hidden Markov Model based CNV callers PennCNV and QuantiSNP. The pipeline utilizes B-Allele Frequency (BAF) and the Log-R Ratio (LRR) of probes on a standard genotyping array to call CNVs.
+
+
+## Quick-Start
+The pipeline can be run using the test profile and the images hosted on github. 
+
+```bash
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,apptainer
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
  CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
-
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="img/CNV-Caller_dag_dark_full.png">

@@ -5,7 +5,6 @@ nextflow.enable.dsl=2
 
 
 process formating_quantisnp{
-    tag "formating_quantisnp"
 
     input:
     path quantisnp_cnv_raw
@@ -32,7 +31,6 @@ process formating_quantisnp{
 }
 
 process formating_penncnv {
-    tag "formating_penncnv"
 
     input:
     path penncnv_cnv_raw
@@ -59,7 +57,6 @@ process formating_penncnv {
 
 
 process sample_qc_report {
-    tag "sample_qc_report"
     label "Rmarkdown"
 
     input:
@@ -90,7 +87,7 @@ process sample_qc_report {
 
 
 process denovo_cnv_annotation_type {
-    tag "denovo_cnv_annotation and type"
+    label "duckdb"
 
     input:
     path input_cnv
@@ -102,7 +99,7 @@ process denovo_cnv_annotation_type {
     script:
     """
     #importing script from other module
-    ${workflow.projectDir}/modules/merge_dataset_CNV/resources/usr/bin/infer_cnv_type.py -i "$input_cnv" -o "cnv_type.tsv" || true 
+    ${workflow.projectDir}/bin/merge_cnv_calls/infer_cnv_type.py -i "$input_cnv" -o "cnv_type.tsv" || true 
 
     cnv_trio_inheritance.py --cnv "cnv_type.tsv" --pedigree $trio_file --type_col Type --overlap 0.5 --output denovo_cnv_annotation.tsv
 
@@ -110,7 +107,6 @@ process denovo_cnv_annotation_type {
 }
 
 process unfilter_cnv_qc {
-    tag "unfilter_cnv_qc"
     label "Rmarkdown"
 
     input:
@@ -134,7 +130,6 @@ process unfilter_cnv_qc {
 
 
 process denovo_cnv_annotation{
-    tag "denovo_cnv_annotation"
 
     input:
     path input_cnv
@@ -150,7 +145,6 @@ process denovo_cnv_annotation{
 }
 
 process merged_cnv_qc {
-    tag "merged_cnv_qc"
     label "Rmarkdown"
 
     input:
@@ -181,7 +175,7 @@ workflow do_merged_cnv_qc {
     trio_file
 
     main:
-    merged_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/usr/bin/cnv_dataset_qc.Rmd")
+    merged_cnv_qc_rmd = file("${projectDir}/bin/make_report/cnv_dataset_qc.Rmd")
     merged_cnv_denovo = denovo_cnv_annotation(merged_cnv, trio_file)
     merged_cnv_qc = merged_cnv_qc(dataset_name, merged_cnv_denovo, merged_cnv_qc_rmd)
 
@@ -197,7 +191,7 @@ workflow do_quantisnp_qc {
     trio_file
 
     main:
-    unfilter_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/usr/bin/cnv_unfilter_qc_report.Rmd")
+    unfilter_cnv_qc_rmd = file("${projectDir}/bin/make_report/cnv_unfilter_qc_report.Rmd")
     quantisnp_denovo = denovo_cnv_annotation_type(quantisnp_cnv, trio_file)
     quantisnp_unfilter_cnv_qc = unfilter_cnv_qc(dataset_name, quantisnp_denovo, unfilter_cnv_qc_rmd,"quantisnp_unfilter_cnv_qc.pdf")
 
@@ -211,7 +205,7 @@ workflow do_penncnv_qc {
     trio_file
 
     main:
-    unfilter_cnv_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/usr/bin/cnv_unfilter_qc_report.Rmd")
+    unfilter_cnv_qc_rmd = file("${projectDir}/bin/make_report/cnv_unfilter_qc_report.Rmd")
     penncnv_denovo = denovo_cnv_annotation_type(penncnv_cnv, trio_file)
     penncnv_unfilter_cnv_qc = unfilter_cnv_qc(dataset_name, penncnv_denovo, unfilter_cnv_qc_rmd,"penncnv_unfilter_cnv_qc.pdf")
 
@@ -231,7 +225,7 @@ workflow MAKE_REPORT {
 
 
     main:
-    sample_qc_rmd = file("${projectDir}/modules/qc_report_pdf/resources/usr/bin/sample_qc_report.Rmd")
+    sample_qc_rmd = file("${projectDir}/bin/make_report/sample_qc_report.Rmd")
 
     sample_qc_report = sample_qc_report(dataset_name,
                     plink2samplemetadata_tsv,
