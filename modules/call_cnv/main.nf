@@ -57,7 +57,7 @@ process callBatchCNVs {
                     --levels \$levels \
                     --config \$config \
                     --chr \$chr \
-                    --mode taskset \
+                    --mode parallel \
                     --cpus ${task.cpus}
     """
 }
