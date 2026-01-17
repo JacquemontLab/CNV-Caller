@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=CNV_caller_light          # Job name
+#SBATCH --job-name=CNV_caller_partial          # Job name
 #SBATCH --ntasks=1                        # Single task
 #SBATCH --cpus-per-task=16                # Number of CPU cores per task
 #SBATCH --mem-per-cpu=3500MB              # Memory per CPU
-#SBATCH --time=01:00:00                   # Time limit (hh:mm:ss)
-#SBATCH --output=CNV_caller_light_%j.log     # Standard output and error log
+#SBATCH --time=02:00:00                   # Time limit (hh:mm:ss)
+#SBATCH --output=CNV_caller_partial_%j.log     # Standard output and error log
 #SBATCH --account=rrg-jacquese            # Account name
 
 cd $SLURM_SUBMIT_DIR || exit 1
 
 # -------------------------------
 # Usage:
-# sbatch run_CNV_caller_light.sh \
+# sbatch run_CNV_caller_partial.sh \
 #                          --git_dir /path/to/git_repo \
 #                          --dataset_name UKBB_N488k \
 #                          --genome_version GRCh37 --plink2samplemetadata_tsv file.tsv \
