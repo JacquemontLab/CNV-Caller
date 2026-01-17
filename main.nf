@@ -286,7 +286,6 @@ workflow {
                 .collectFile()
         }
 
-
         penncnv_cnv_raw = Channel
             .fromPath(params.penncnv_calls_path)
             .collectFile()
