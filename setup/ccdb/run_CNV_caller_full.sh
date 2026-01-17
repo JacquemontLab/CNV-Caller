@@ -79,7 +79,6 @@ nextflow run "$MAIN_NF" \
     --batch_size $batch_size \
     --report "$report" \
     -c "$CONFIG_FILE" \
-    -profile standard \
     -resume
 
 

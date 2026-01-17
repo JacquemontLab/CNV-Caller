@@ -73,6 +73,5 @@ nextflow run "$MAIN_NF" \
     --plink2samplemetadata_tsv "$plink2samplemetadata_tsv" \
     --report "$report" \
     -c "$CONFIG_FILE" \
-    -profile standard \
     -resume
 
