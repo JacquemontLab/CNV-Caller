@@ -176,7 +176,6 @@ workflow FORMAT_CNV {
         plink2samplemetadata_tsv
 
     main :
-
         formatRawCNV(penncnv_calls_path, quantisnp_calls_path)
 
         if (file(penncnv_qc_path).exists() && plink2samplemetadata_tsv){
@@ -279,11 +278,14 @@ workflow {
 
         //formatting output from partial run to mask variables
         sample_db_ch      = FORMAT_CNV.out.sample_DB
-        penncnv_qc        = FORMAT_CNV.out.penncnv_qc
 
-        penncnv_qc = Channel
-            .fromPath(params.penncnv_qc_path)
-            .collectFile()
+
+        if (file(params.penncnv_qc_path).exists()){
+            penncnv_qc = Channel
+                .fromPath(params.penncnv_qc_path)
+                .collectFile()
+        }
+
 
         penncnv_cnv_raw = Channel
             .fromPath(params.penncnv_calls_path)
