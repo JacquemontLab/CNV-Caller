@@ -270,7 +270,7 @@ workflow {
     } else if (params.pipeline_mode == "partial") {
         log.info("Running Partial pipeline on ${params.dataset_name}")
         
-       FORMAT_CNV (    
+       FORMAT_CNV (
                        file(params.penncnv_calls_path),
                        file(params.quantisnp_calls_path),
                        file(params.penncnv_qc_path),
@@ -280,8 +280,18 @@ workflow {
         //formatting output from partial run to mask variables
         sample_db_ch      = FORMAT_CNV.out.sample_DB
         penncnv_qc        = FORMAT_CNV.out.penncnv_qc
-        penncnv_cnv_raw   = Channel.fromPath(params.penncnv_calls_path)
-        quantisnp_cnv_raw = Channel.fromPath(params.quantisnp_calls_path)
+
+        penncnv_qc = Channel
+            .fromPath(params.penncnv_qc)
+            .collectFile()
+            
+        penncnv_cnv_raw = Channel
+            .fromPath(params.penncnv_calls_path)
+            .collectFile()
+
+        quantisnp_cnv_raw = Channel
+            .fromPath(params.quantisnp_calls_path)
+            .collectFile()
         quantisnp_cnv     = FORMAT_CNV.out.formatted_quantisnp
         penncnv_cnv       = FORMAT_CNV.out.formatted_penncnv
     }
@@ -382,6 +392,7 @@ output {
         mode 'copy'
         path "${params.dataset_name}/calls_unfiltered/quantisnp/"
     }
+
     penncnv_unfilter_cnv_qc {
         mode 'copy'
         path "${params.dataset_name}/docs/"
