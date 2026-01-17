@@ -280,11 +280,11 @@ workflow {
         sample_db_ch      = FORMAT_CNV.out.sample_DB
 
 
-        if (file(params.penncnv_qc_path).exists()){
+        if (params.penncnv_qc_path){
             penncnv_qc = Channel
                 .fromPath(params.penncnv_qc_path)
                 .collectFile()
-        }
+            }
 
         penncnv_cnv_raw = Channel
             .fromPath(params.penncnv_calls_path)
