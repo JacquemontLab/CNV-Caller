@@ -184,10 +184,10 @@ workflow FORMAT_CNV {
         }
 
     emit:
-    formatted_penncnv    = formatRawCNV.out.penncnv_cnv
-    formatted_quantisnp  = formatRawCNV.out.quantisnp_cnv
-    sample_DB            = mergeSampleMetadata.out ?: Channel.empty()
-    penncnv_qc           = penncnv_qc_path
+        formatted_penncnv    = formatRawCNV.out.penncnv_cnv
+        formatted_quantisnp  = formatRawCNV.out.quantisnp_cnv
+        sample_DB            = mergeSampleMetadata.out ?: Channel.empty()
+        penncnv_qc           = penncnv_qc_path
 
 }
 
@@ -231,10 +231,10 @@ workflow {
         CALLING CNVs AND MERGE
         '''
         CALL_CNV              ( batch_ch,                                                               // File of paths to baf_lrr files without the sampleID
-                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                            // PFB file, passing into value channel using first()
-                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                            // HMM file, passing into value channel using first()
-                                PREPARE_PENNCNV_INPUTS.out.gc_model,                            // GC model
-                                plink_ch.sexfile,                                               // Sexfile from metadata input 
+                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                                    // PFB file, passing into value channel using first()
+                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    /// HMM file, passing into value channel using first()
+                                PREPARE_PENNCNV_INPUTS.out.gc_model,                                    /// GC model
+                                plink_ch.sexfile,                                                       /// Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                               )
         
@@ -280,8 +280,8 @@ workflow {
         //formatting output from partial run to mask variables
         sample_db_ch      = FORMAT_CNV.out.sample_DB
         penncnv_qc        = FORMAT_CNV.out.penncnv_qc
-        penncnv_cnv_raw   = file(params.penncnv_calls_path)
-        quantisnp_cnv_raw = file(params.quantisnp_calls_path)
+        penncnv_cnv_raw   = Channel.fromPath(params.penncnv_calls_path)
+        quantisnp_cnv_raw = Channel.fromPath(params.quantisnp_calls_path)
         quantisnp_cnv     = FORMAT_CNV.out.formatted_quantisnp
         penncnv_cnv       = FORMAT_CNV.out.formatted_penncnv
     }
@@ -329,10 +329,10 @@ workflow {
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-    sampleDB   = sample_db_ch ?: Channel.empty()                                                            //publish even if empty
+    sampleDB   = sample_db_ch ?: Channel.empty()    //publish even if empty
 
     // Before filter results
-    penncnv_qc        = penncnv_qc ?: (CALL_CNV.out.penncnv_qc_ch ?: Channel.empty())              //only emits from the full run 
+    penncnv_qc        = penncnv_qc ?: Channel.empty()
     penncnv_cnv_raw   = penncnv_cnv_raw
     penncnv_cnv       = penncnv_cnv
     quantisnp_cnv_raw = quantisnp_cnv_raw

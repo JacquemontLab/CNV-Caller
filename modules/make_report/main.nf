@@ -165,9 +165,6 @@ process merged_cnv_qc {
     """
 }
 
-
-
-
 workflow do_merged_cnv_qc {
     take:
     dataset_name
