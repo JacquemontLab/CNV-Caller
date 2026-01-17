@@ -282,9 +282,9 @@ workflow {
         penncnv_qc        = FORMAT_CNV.out.penncnv_qc
 
         penncnv_qc = Channel
-            .fromPath(params.penncnv_qc)
+            .fromPath(params.penncnv_qc_path)
             .collectFile()
-            
+
         penncnv_cnv_raw = Channel
             .fromPath(params.penncnv_calls_path)
             .collectFile()
