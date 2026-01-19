@@ -106,7 +106,7 @@ ggplot(qc_df, aes(y = Call_Rate, x = "")) +
     axis.title = element_text(size = 16)
   )
 
-cat(sprintf("Number of samples NOT passing Call Rate threshold (>= 0.98): %d\n", fail_counts$fail_Call_Rate))
+cat(sprintf("Number of samples NOT passing Call Rate threshold (>= 0.98): %s\n", fail_counts$fail_Call_Rate))
 
 ```
 
@@ -123,7 +123,7 @@ ggplot(qc_df, aes(y = LRR_SD, x = "")) +
     axis.title = element_text(size = 16)
   ) + coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing LRR_SD threshold (< 0.3): %d\n", fail_counts$fail_LRR_SD))
+cat(sprintf("Number of samples NOT passing LRR_SD threshold (< 0.3): %s\n", fail_counts$fail_LRR_SD))
 
 ```
 
@@ -143,7 +143,7 @@ ggplot(qc_df, aes(y = BAF_DRIFT, x = "")) +
     axis.title = element_text(size = 13.5)
   )+ coord_cartesian(ylim = c(0, NA))
 
-cat(sprintf("Number of samples NOT passing BAF_DRIFT threshold (< 0.01): %d\n", fail_counts$fail_BAF_DRIFT))
+cat(sprintf("Number of samples NOT passing BAF_DRIFT threshold (< 0.01): %s\n", fail_counts$fail_BAF_DRIFT))
 
 ```
 
@@ -162,7 +162,7 @@ ggplot(qc_df, aes(y = WF, x = "")) +
     axis.title = element_text(size = 16)
   )
 
-cat(sprintf("Number of samples NOT passing WF threshold (between -0.05 and 0.05): %d\n", fail_counts$fail_WF))
+cat(sprintf("Number of samples NOT passing WF threshold (between -0.05 and 0.05): %s\n", fail_counts$fail_WF))
 
 ```
 
