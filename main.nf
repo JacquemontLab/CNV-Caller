@@ -144,6 +144,12 @@ process extractPlink {
 
 
 
+include { STAGE_FILE as stageFile1 } from './modules'
+include { STAGE_FILE as stageFile2 } from './modules'
+include { STAGE_FILE as stageFile3 } from './modules'
+include { STAGE_FILE as stageFile4 } from './modules'
+include { STAGE_FILE as stageFile5 } from './modules'
+
 
 
 // Default params
@@ -168,36 +174,16 @@ params.penncnv_calls_path       = ""
 params.quantisnp_calls_path     = ""
 
 
-workflow FORMAT_CNV {  
-    take :
-        penncnv_calls_path
-        quantisnp_calls_path
-        penncnv_qc_path
-        plink2samplemetadata_tsv
-
-    main :
-        formatRawCNV(penncnv_calls_path, quantisnp_calls_path)
-
-        if (file(penncnv_qc_path).exists() && plink2samplemetadata_tsv){
-            mergeSampleMetadata( plink2samplemetadata_tsv, penncnv_qc_path )   
-        }
-
-    emit:
-        formatted_penncnv    = formatRawCNV.out.penncnv_cnv
-        formatted_quantisnp  = formatRawCNV.out.quantisnp_cnv
-        sample_DB            = mergeSampleMetadata.out ?: Channel.empty()
-        penncnv_qc           = penncnv_qc_path
-
-}
-
 workflow {
     
     main:
-
-    plink_ch = extractPlink(params.plink2samplemetadata_tsv)
+    
+    plink_ch = params.plink2samplemetadata_tsv ?
+            extractPlink(params.plink2samplemetadata_tsv)
+            : channel.empty()
 
     if (params.pipeline_mode == "full"){
-        
+
         log.info("Running Full pipeline on ${params.dataset_name}")
 
         sample_file_ch  = channel.fromPath(params.sample_file)
@@ -230,8 +216,8 @@ workflow {
         CALLING CNVs AND MERGE
         '''
         CALL_CNV              ( batch_ch,                                                               // File of paths to baf_lrr files without the sampleID
-                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                                    // PFB file, passing into value channel using first()
-                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    /// HMM file, passing into value channel using first()
+                                PREPARE_PENNCNV_INPUTS.out.pfb_file,                                    // PFB file
+                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    /// HMM file
                                 PREPARE_PENNCNV_INPUTS.out.gc_model,                                    /// GC model
                                 plink_ch.sexfile,                                                       /// Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
@@ -261,40 +247,40 @@ workflow {
                                                    .flatten()
                                                    .collectFile(keepHeader : true,
                                                                 name       :"PennCNV_QC.tsv")
-        
-        //Make SampleDB
-        sample_db_ch = mergeSampleMetadata(params.plink2samplemetadata_tsv, penncnv_qc)
 
+        sample_db_ch = mergeSampleMetadata(
+                    params.plink2samplemetadata_tsv,
+                    penncnv_qc
+                    )
     
     } else if (params.pipeline_mode == "partial") {
         log.info("Running Partial pipeline on ${params.dataset_name}")
+
+        formatRawCNV(params.penncnv_calls_path, params.quantisnp_calls_path)
+
+        penncnv_cnv    = formatRawCNV.out.penncnv_cnv
+        penncnv_cnv_raw   = stageFile1(params.penncnv_calls_path, "PennCNV_raw_calls.txt")
+
+        quantisnp_cnv  = formatRawCNV.out.quantisnp_cnv
+        quantisnp_cnv_raw = stageFile2(params.quantisnp_calls_path, "QuantiSNP_raw_calls.txt")
+
         
-       FORMAT_CNV (
-                       file(params.penncnv_calls_path),
-                       file(params.quantisnp_calls_path),
-                       file(params.penncnv_qc_path),
-                       file(params.plink2samplemetadata_tsv)       
-                  )
+        penncnv_qc = params.penncnv_qc_path \
+            ? stageFile3(params.penncnv_qc_path, "PennCNV_QC.tsv")
+            : channel.empty()
 
-        //formatting output from partial run to mask variables
-        sample_db_ch      = FORMAT_CNV.out.sample_DB
+        sample_db_ch = (
+            params.penncnv_qc_path && params.plink2samplemetadata_tsv
+            ) ? mergeSampleMetadata(
+                    params.plink2samplemetadata_tsv,
+                    penncnv_qc
+                )
+            : params.penncnv_qc_path
+                ? stageFile4(params.penncnv_qc_path, "sampleDB.tsv")
+            : params.plink2samplemetadata_tsv
+                ? stageFile5(params.plink2samplemetadata_tsv, "sampleDB.tsv")
+            : channel.empty()
 
-
-        if (params.penncnv_qc_path){
-            penncnv_qc = Channel
-                .fromPath(params.penncnv_qc_path)
-                .collectFile()
-            }
-
-        penncnv_cnv_raw = Channel
-            .fromPath(params.penncnv_calls_path)
-            .collectFile()
-
-        quantisnp_cnv_raw = Channel
-            .fromPath(params.quantisnp_calls_path)
-            .collectFile()
-        quantisnp_cnv     = FORMAT_CNV.out.formatted_quantisnp
-        penncnv_cnv       = FORMAT_CNV.out.formatted_penncnv
     }
 
     //RUN for both partial and full runs 
@@ -340,20 +326,20 @@ workflow {
 
     // MERGED CNV DATASET
     merged_cnv = MERGE_CNV_CALLS.out.merged_cnv_ch
-    sampleDB   = sample_db_ch ?: Channel.empty()    //publish even if empty
+    sampleDB   = sample_db_ch ?: channel.empty()    //publish even if empty
 
     // Before filter results
-    penncnv_qc        = penncnv_qc ?: Channel.empty()
+    penncnv_qc        = penncnv_qc ?: channel.empty()
     penncnv_cnv_raw   = penncnv_cnv_raw
     penncnv_cnv       = penncnv_cnv
     quantisnp_cnv_raw = quantisnp_cnv_raw
     quantisnp_cnv     = quantisnp_cnv
 
     // REPORT outputs only if report was run
-    penncnv_unfilter_cnv_qc   = params.report ? MAKE_REPORT.out.penncnv_unfilter_cnv_qc   : Channel.empty()
-    quantisnp_unfilter_cnv_qc = params.report ? MAKE_REPORT.out.quantisnp_unfilter_cnv_qc : Channel.empty()
-    merged_cnv_qc             = params.report ? MAKE_REPORT.out.merged_cnv_qc             : Channel.empty()
-    sample_qc_report          = params.report ? MAKE_REPORT.out.sample_qc_report          : Channel.empty()
+    penncnv_unfilter_cnv_qc   = params.report ? MAKE_REPORT.out.penncnv_unfilter_cnv_qc   : channel.empty()
+    quantisnp_unfilter_cnv_qc = params.report ? MAKE_REPORT.out.quantisnp_unfilter_cnv_qc : channel.empty()
+    merged_cnv_qc             = params.report ? MAKE_REPORT.out.merged_cnv_qc             : channel.empty()
+    sample_qc_report          = params.report ? MAKE_REPORT.out.sample_qc_report          : channel.empty()
 
     report_summary = buildSummary.out
 }
