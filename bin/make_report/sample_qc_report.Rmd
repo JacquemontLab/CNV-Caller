@@ -23,6 +23,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(ggplot2)
 library(RColorBrewer)
 library(dplyr)
+library(scales)
 set_color <- brewer.pal(8, 'Paired')
 set_color <- append(set_color, c("#fdfd99", "#e2cc1a"))
 ```
