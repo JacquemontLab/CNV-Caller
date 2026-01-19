@@ -24,8 +24,6 @@ output_file='SPARK_PennCNV_raw_QC.pdf'
 
 -->
 
-# **Dataset:** `r params$dataset_name`  
-# **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
 
 ```{r setup, echo=FALSE, include=FALSE}
 library(ggplot2)
@@ -51,9 +49,11 @@ child_cnv$SampleID = as.character(child_cnv$SampleID)
 x_var_list = strsplit(params$x_var_list,",")[[1]]
 ```
 
-# **Number of Trios or Children analyzed:** `r length(unique(child_cnv$SampleID))`
+# **Dataset:** `r params$dataset_name`  
+### **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
+### **Number of Trios or Children analyzed:** `r scales::comma(length(unique(child_cnv$SampleID)))`
 
-## CNV Length Distribution Across Samples
+## 1- CNV Length Distribution Across Samples
 
 ```{r, echo=FALSE, fig.width=7, fig.height=3}
 ggplot(child_cnv[child_cnv$Type %in% c("DUP","DEL"),], aes(x = Length, fill = Type)) +   # map fill to Type
@@ -103,7 +103,7 @@ labels <- c("1-10 kb", "10-100 kb", "100 kb-1 Mb", ">1 Mb")
 child_cnv <- child_cnv %>% mutate(length_bin = cut(Length, breaks = breaks, labels = labels, include.lowest = TRUE))
 ```
 
-## Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
+## 2- Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
 *Note: bins with fewer than 100 CNVs were excluded from the analysis.*
 
 \vspace{1cm}
@@ -242,7 +242,7 @@ final_plot
 
 \newpage
 
-## Mendelian precision across CNV length bins stratified by deletion and duplication types, two algorithm overlap thresholds, and filtering criteria (including segmental duplication exclusion and maximum confidence score), with error estimates and minimum count filtering.
+## 3- Mendelian precision across CNV length bins stratified by deletion and duplication types, two algorithm overlap thresholds, and filtering criteria (including segmental duplication exclusion and maximum confidence score), with error estimates and minimum count filtering.
 
 \vspace{1cm}
 

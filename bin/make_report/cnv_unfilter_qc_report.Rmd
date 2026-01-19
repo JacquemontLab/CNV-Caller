@@ -24,9 +24,6 @@ output_file='SPARK_PennCNV_raw_QC.pdf'
 
 -->
 
-# **Dataset:** `r params$dataset_name`  
-# **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
-
 ```{r setup, echo=FALSE, include=FALSE}
 library(ggplot2)
 library(patchwork)  # for arranging plots
@@ -47,9 +44,12 @@ child_cnv$SampleID = as.character(child_cnv$SampleID)
 x_var_list = strsplit(params$x_var_list,",")[[1]]
 ```
 
-# **Number of Trios or Children analyzed:** `r length(unique(child_cnv$SampleID))`
 
-## CNV Length Distribution Across Samples
+# **Dataset:** `r params$dataset_name`  
+### **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
+### **Number of Trios or Children analyzed:** `r scales::comma(length(unique(child_cnv$SampleID)))`
+
+## 1- CNV Length Distribution Across Samples
 
 ```{r, echo=FALSE, fig.width=7, fig.height=3}
 
@@ -102,7 +102,7 @@ child_cnv <- child_cnv %>% mutate(length_bin = cut(Length, breaks = breaks, labe
 
 \newpage
 
-## Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
+## 2- Mendelian precision across CNV length bins: assessing dataset quality (proportion of child CNVs observed in parents with $\geq 50\%$ reciprocal overlap) across multiple metrics.
 *Note: bins with fewer than 100 CNVs were excluded from the analysis.*
 
 \vspace{1cm}

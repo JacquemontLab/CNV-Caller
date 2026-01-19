@@ -18,9 +18,6 @@ output_file='sample_qc_report.pdf'
 )"
 -->
 
-# **Dataset:** `r params$dataset_name`  
-# **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(ggplot2)
@@ -30,6 +27,9 @@ set_color <- brewer.pal(8, 'Paired')
 set_color <- append(set_color, c("#fdfd99", "#e2cc1a"))
 ```
 
+
+# **Dataset:** `r params$dataset_name`  
+### **Date:** `r format(Sys.Date(), "%d/%m/%Y")`
 ## Sample Count by Sex
 
 ```{r sex-count}
@@ -51,21 +51,21 @@ qc_df <- qc_df %>%
 # Count fails per metric (to print below plots)
 fail_counts <- qc_df %>%
   summarise(
-    total_samples = n(),
-    fail_Call_Rate = sum(!pass_Call_Rate),
-    fail_LRR_SD = sum(!pass_LRR_SD),
-    fail_BAF_DRIFT = sum(!pass_BAF_DRIFT),
-    fail_WF = sum(!pass_WF),
-    pass_all = sum(pass_all)
+    total_samples = scales::comma(n()),
+    fail_Call_Rate = scales::comma(sum(!pass_Call_Rate)),
+    fail_LRR_SD = scales::comma(sum(!pass_LRR_SD)),
+    fail_BAF_DRIFT = scales::comma(sum(!pass_BAF_DRIFT)),
+    fail_WF = scales::comma(sum(!pass_WF)),
+    pass_all = scales::comma(sum(pass_all))
   )
 
 # Count samples by Sex, handling missing column
 if("Sex" %in% colnames(qc_df)) {
   sex_summary <- qc_df %>%
     count(Sex) %>%
-    rename(Sex = Sex, Count = n)
+    rename(Sex = Sex, Count = scales::comma(n))
 } else {
-  sex_summary <- tibble(Sex = "Unknown", Count = nrow(qc_df))
+  sex_summary <- tibble(Sex = "Unknown", Count = scales::comma(nrow(qc_df)))
 }
 
 knitr::kable(sex_summary, caption = "Number of Samples by Sex")
