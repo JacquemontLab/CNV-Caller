@@ -14,7 +14,7 @@ cd $SLURM_SUBMIT_DIR || exit 1
 # sbatch run_CNV_caller_partial.sh \
 #                          --git_dir /path/to/git_repo \
 #                          --dataset_name UKBB_N488k \
-#                          --genome_version GRCh37 --plink2samplemetadata_tsv file.tsv \
+#                          --genome_version GRCh37 --plink2samplemetadata file.tsv \
 #                          --penncnv_calls_path file.txt --quantisnp_calls_path file.txt \
 #                          --penncnv_qc_path file.tsv \
 #                          [--report true|false]
@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
         --git_dir) git_dir="$2"; shift 2 ;;
         --dataset_name) dataset_name="$2"; shift 2 ;;
         --genome_version) genome_version="$2"; shift 2 ;;
-        --plink2samplemetadata_tsv) plink2samplemetadata_tsv="$2"; shift 2 ;;
+        --plink2samplemetadata) plink2samplemetadata="$2"; shift 2 ;;
         --penncnv_calls_path) penncnv_calls_path="$2"; shift 2 ;;
         --quantisnp_calls_path) quantisnp_calls_path="$2"; shift 2 ;;
         --penncnv_qc_path) penncnv_qc_path="$2"; shift 2 ;;
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check required arguments
-for var in git_dir dataset_name genome_version plink2samplemetadata_tsv penncnv_calls_path quantisnp_calls_path penncnv_qc_path; do
+for var in git_dir dataset_name genome_version plink2samplemetadata penncnv_calls_path quantisnp_calls_path penncnv_qc_path; do
     if [[ -z "${!var}" ]]; then
         echo "Error: --$var is required"
         exit 1
@@ -56,6 +56,7 @@ export NXF_OFFLINE=true
 
 # Load modules
 module load nextflow
+module load apptainer
 module load r
 
 # Resolve main.nf and config based on git_dir
@@ -70,7 +71,7 @@ nextflow run "$MAIN_NF" \
     --penncnv_calls_path "$penncnv_calls_path" \
     --quantisnp_calls_path "$quantisnp_calls_path" \
     --penncnv_qc_path "$penncnv_qc_path" \
-    --plink2samplemetadata_tsv "$plink2samplemetadata_tsv" \
+    --plink2samplemetadata "$plink2samplemetadata" \
     --report "$report" \
     -c "$CONFIG_FILE" \
     -resume

@@ -21,8 +21,8 @@ cd $SLURM_SUBMIT_DIR || exit 1
 #          --git_dir /path/to/git_repo \
 #          --dataset_name UKBB_N488k \
 #          --genome_version GRCh37 \
-#          --plink2samplemetadata_tsv file.tsv \
-#          --list_sample_baflrrpath list.tsv \
+#          --plink2samplemetadata file.tsv \
+#          --sample_file list.tsv \
 #          [--batch_size 20] \
 #          [--report true|false]
 # ------------------------------------------------------------------------------
@@ -41,8 +41,8 @@ while [[ $# -gt 0 ]]; do
         --git_dir) git_dir="$2"; shift 2 ;;
         --dataset_name) dataset_name="$2"; shift 2 ;;
         --genome_version) genome_version="$2"; shift 2 ;;
-        --plink2samplemetadata_tsv) plink2samplemetadata_tsv="$2"; shift 2 ;;
-        --list_sample_baflrrpath) list_sample_baflrrpath="$2"; shift 2 ;;
+        --plink2samplemetadata) plink2samplemetadata="$2"; shift 2 ;;
+        --sample_file) sample_file="$2"; shift 2 ;;
         --batch_size) batch_size="$2"; shift 2 ;;
         --report) report="$2"; shift 2 ;;
         *) echo "Unknown option $1"; exit 1 ;;
@@ -53,7 +53,7 @@ done
 # -------------------------------
 # Check required arguments
 # -------------------------------
-for var in git_dir dataset_name genome_version plink2samplemetadata_tsv list_sample_baflrrpath; do
+for var in git_dir dataset_name genome_version plink2samplemetadata sample_file; do
     if [[ -z "${!var}" ]]; then
         echo "Error: --$var is required"
         exit 1
@@ -65,6 +65,7 @@ export NXF_OFFLINE=true
 
 # Load modules
 module load nextflow
+module load apptainer
 module load r
 
 # Resolve main.nf and config based on git_dir
@@ -74,8 +75,8 @@ CONFIG_FILE="${git_dir}/setup/ccdb/ccdb.config"
 nextflow run "$MAIN_NF" \
     --dataset_name "$dataset_name" \
     --genome_version "$genome_version" \
-    --list_sample_baflrrpath "$list_sample_baflrrpath" \
-    --plink2samplemetadata_tsv "$plink2samplemetadata_tsv" \
+    --sample_file "$sample_file" \
+    --plink2samplemetadata "$plink2samplemetadata" \
     --batch_size $batch_size \
     --report "$report" \
     -c "$CONFIG_FILE" \

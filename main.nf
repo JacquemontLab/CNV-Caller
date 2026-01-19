@@ -67,7 +67,7 @@ process mergeSampleMetadata {
     label "duckdb"
 
     input:
-    path plink2samplemetadata_tsv
+    path plink2samplemetadata
     path penncnv_qc
 
     output:
@@ -82,7 +82,7 @@ process mergeSampleMetadata {
              meta.* EXCLUDE SampleID,
              pennqc.* EXCLUDE SampleID
          FROM read_csv_auto('$penncnv_qc', sep='\t', header=true) AS pennqc
-         RIGHT JOIN read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true) AS meta
+         RIGHT JOIN read_csv_auto('$plink2samplemetadata', sep='\t', header=true) AS meta
          ON CAST(pennqc.SampleID AS VARCHAR) = CAST(meta.SampleID AS VARCHAR)
 
     )  TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
@@ -120,7 +120,7 @@ process formatRawCNV {
 process extractPlink {
 
     input:
-    path plink2samplemetadata_tsv
+    path plink2samplemetadata
 
     output:
     path 'sexfile.tsv', emit: sexfile
@@ -131,12 +131,12 @@ process extractPlink {
     duckdb -c "
     COPY (
         SELECT SampleID, Sex
-        FROM read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true)
+        FROM read_csv_auto('$plink2samplemetadata', sep='\t', header=true)
     ) TO 'sexfile.tsv' (HEADER, DELIMITER '\\t');
 
     COPY (
         SELECT SampleID, FatherID, MotherID
-        FROM read_csv_auto('$plink2samplemetadata_tsv', sep='\t', header=true)
+        FROM read_csv_auto('$plink2samplemetadata', sep='\t', header=true)
     ) TO 'trio.tsv' (HEADER, DELIMITER '\\t');
     "
     """
@@ -154,10 +154,10 @@ include { STAGE_FILE as stageFile5 } from './modules'
 
 // Default params
 params.pipeline_mode            = "full"
-params.plink2samplemetadata_tsv = ""
+params.plink2samplemetadata = ""
 params.report                   = false
 params.genome_version           = "GRCh38"
-params.dataset_name             = ""
+params.dataset_name             = "dataset"
 params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
 
 // Full specific
@@ -178,8 +178,8 @@ workflow {
     
     main:
     
-    plink_ch = params.plink2samplemetadata_tsv ?
-            extractPlink(params.plink2samplemetadata_tsv)
+    plink_ch = params.plink2samplemetadata ?
+            extractPlink(params.plink2samplemetadata)
             : channel.empty()
 
     if (params.pipeline_mode == "full"){
@@ -206,7 +206,7 @@ workflow {
         '''
 
         PREPARE_PENNCNV_INPUTS ( sample_file_ch, 
-                                 params.plink2samplemetadata_tsv,
+                                 params.plink2samplemetadata,
                                  file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
                                  params.pfb_max_sample_size,
                                  params.data_type                                                                                        
@@ -217,9 +217,9 @@ workflow {
         '''
         CALL_CNV              ( batch_ch,                                                               // File of paths to baf_lrr files without the sampleID
                                 PREPARE_PENNCNV_INPUTS.out.pfb_file,                                    // PFB file
-                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    /// HMM file
-                                PREPARE_PENNCNV_INPUTS.out.gc_model,                                    /// GC model
-                                plink_ch.sexfile,                                                       /// Sexfile from metadata input 
+                                PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    // HMM file
+                                PREPARE_PENNCNV_INPUTS.out.gc_model,                                    // GC model
+                                plink_ch.sexfile,                                                       // Sexfile from metadata input 
                                 params.genome_version                                                   // genome version for choosing gc content directory                
                               )
         
@@ -249,11 +249,12 @@ workflow {
                                                                 name       :"PennCNV_QC.tsv")
 
         sample_db_ch = mergeSampleMetadata(
-                    params.plink2samplemetadata_tsv,
+                    params.plink2samplemetadata,
                     penncnv_qc
                     )
     
     } else if (params.pipeline_mode == "partial") {
+
         log.info("Running Partial pipeline on ${params.dataset_name}")
 
         formatRawCNV(params.penncnv_calls_path, params.quantisnp_calls_path)
@@ -270,20 +271,20 @@ workflow {
             : channel.empty()
 
         sample_db_ch = (
-            params.penncnv_qc_path && params.plink2samplemetadata_tsv
+            params.penncnv_qc_path && params.plink2samplemetadata
             ) ? mergeSampleMetadata(
-                    params.plink2samplemetadata_tsv,
+                    params.plink2samplemetadata,
                     penncnv_qc
                 )
             : params.penncnv_qc_path
                 ? stageFile4(params.penncnv_qc_path, "sampleDB.tsv")
-            : params.plink2samplemetadata_tsv
-                ? stageFile5(params.plink2samplemetadata_tsv, "sampleDB.tsv")
+            : params.plink2samplemetadata
+                ? stageFile5(params.plink2samplemetadata, "sampleDB.tsv")
             : channel.empty()
 
     }
 
-    //RUN for both partial and full runs 
+
     '''
     PREFILTERING - MERGING
     '''
@@ -300,7 +301,7 @@ workflow {
     if (params.report) {
 
         MAKE_REPORT (    params.dataset_name,
-                         params.plink2samplemetadata_tsv,
+                         params.plink2samplemetadata,
                          plink_ch.triofile,
                          penncnv_qc,
                          penncnv_cnv_raw,
