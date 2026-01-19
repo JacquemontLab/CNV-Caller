@@ -8,7 +8,7 @@ mkdir -p $NXF_CONDA_CACHE
 penncnv_calls_path=~/data_raw/merge_raw/PennCNV_raw_calls.txt
 quantisnp_calls_path=~/data_raw/merge_raw/QuantiSNP_raw_calls.txt
 penncnv_qc_path=~/data_raw/PennCNV_QC.tsv
-plink2samplemetadata_tsv=~/plink/Plink2SampleMetadata/results/sample_metadata_from_plink.tsv
+plink2samplemetadata=~/plink/Plink2SampleMetadata/results/sample_metadata_from_plink.tsv
 
 
 nextflow run ~/CNV-Caller/main.nf \
@@ -16,5 +16,5 @@ nextflow run ~/CNV-Caller/main.nf \
 --penncnv_calls_path $penncnv_calls_path \
 --quantisnp_calls_path $quantisnp_calls_path \
 --penncnv_qc_path $penncnv_qc_path \
---plink2samplemetadata_tsv $plink2samplemetadata_tsv \
+--plink2samplemetadata $plink2samplemetadata \
 --report true -c ~/CNV-Caller/setup/allofus/allofus.config -profile standard -resume

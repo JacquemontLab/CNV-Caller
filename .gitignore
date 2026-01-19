@@ -29,6 +29,5 @@ work/
 
 #ignore unit-test dir
 .nf-test
-tests/sampleFile.tsv
 
 

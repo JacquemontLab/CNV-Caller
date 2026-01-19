@@ -18,7 +18,6 @@ nextflow.enable.dsl=2
  *   - merged_cnv.tsv: Combined CNV call file
  */
 process mergeCNVcalls {
-    label 'merge_cnv'
 
     input:
     path quantisnp_cnv_raw

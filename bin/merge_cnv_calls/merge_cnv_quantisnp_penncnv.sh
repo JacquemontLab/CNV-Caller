@@ -126,9 +126,6 @@ log_step "STEP 2: Pre-filter by length >= 1000 bp and by score (30 for PennCNV a
 "$SCRIPT_DIR"/filter_by_score_and_length.sh "$tmp_format_pc" 30 > "$tmp_filter_pc"
 "$SCRIPT_DIR"/filter_by_score_and_length.sh "$tmp_format_qs" 15 > "$tmp_filter_qs"
 
-
-
-
 ### --------------------- STEP 3: Remove CNVs in pseudoautosomal regions --------------------- ###
 log_step "STEP 3: Remove CNVs in pseudoautosomal regions on ChrX with Copy_Number = 2"
 "$SCRIPT_DIR"/remove_PAR_regions.sh "$tmp_filter_qs" "$qs_clean" "$regions_file" "${genome_version}"

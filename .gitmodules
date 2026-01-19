@@ -1,3 +1,0 @@
-[submodule "setup/nf-configs"]
-	path = setup/nf-configs
-	url = git@github.com:JacquemontLab/nf-configs.git
