@@ -98,6 +98,8 @@ See the `tests/` directory for example input files.
 
   > *FatherID* and *MotherID* are only required if `--report "true"` is used, to assess Mendelian precision as an indicator of data quality.
 
+  > Can be generated using [Git Repository Plink2SampleMetadata](https://github.com/JacquemontLab/Plink2SampleMetadata)
+  
   #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
 
   99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
@@ -362,7 +364,7 @@ Or use a parameter yaml file to specify parameters
 ```yaml
 dataset_name: My_Cohort
 genome_version: GRCh38
-plink2samplemetadata_tsv: /home/path_to/metadata.tsv
+plink2samplemetadata: /home/path_to/plink2samplemetadata.tsv
 sample_file: /home/path_to/sample_file.tsv
 batch_size: 180
 pfb_sample_size : 1000
