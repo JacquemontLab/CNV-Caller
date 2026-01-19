@@ -354,6 +354,22 @@ nextflow run main.nf \
     -resume
 ```
 
+
+Or use a parameter yaml file to specify parameters
+ eg:
+
+*__params.yaml__*
+```yaml
+dataset_name: My_Cohort
+genome_version: GRCh38
+plink2samplemetadata_tsv: /home/path_to/metadata.tsv
+sample_file: /home/path_to/sample_file.tsv
+batch_size: 180
+pfb_sample_size : 1000
+report : false
+pipeline_mode : full
+data_type : 'array'
+
 ## Configuration 
 Configuration of the pipeline is necessary to match the needs of your cluster and dataset. What's provided below is a template for launching on an HPC using SLURM job managment with access to the internet for container retrieval. 
 
