@@ -64,7 +64,8 @@ fail_counts <- qc_df %>%
 if("Sex" %in% colnames(qc_df)) {
   sex_summary <- qc_df %>%
     count(Sex) %>%
-    rename(Sex = Sex, Count = scales::comma(n))
+    rename(Sex = Sex, Count = n) %>%
+    mutate(Count = scales::comma(Count))
 } else {
   sex_summary <- tibble(Sex = "Unknown", Count = scales::comma(nrow(qc_df)))
 }
