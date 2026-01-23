@@ -36,37 +36,7 @@ You might need to pull the following containers if working **offline**:
 * docker://ghcr.io/jacquemontlab/python_etl_packages:latest
 
 
-
-## Usage
-
-### Testing
-
-The pipeline can be tested using the test profile and the images hosted on github using the container of your choice. 
-
-```bash
-container=docker # or apptainer or singularity
-
-# Full Mode
-nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_full,${container}
-
-# Partial Mode
-nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_partial,${container}
-```
-
-### Example Launch
-
-```bash
-nextflow run main.nf \
-    --dataset_name dataset \
-    --genome_version "$genome_version" \
-    --sample_file "$sample_file" \
-    --plink2samplemetadata "$plink2samplemetadata" \
-    --batch_size 10 \
-    --report true \
-    -c "$CONFIG_FILE"
-```
-
-## Inputs:
+## Inputs
 
 ### Base Parameters
 Parameters shared by both partial and full runs.
@@ -99,7 +69,6 @@ For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CN
 | `penncnv_calls_path` | Path to PennCNV raw CNVs file (.txt) | | Yes |
 | `penncnv_qc_path` | QC metrics from PennCNV (SampleID → LRR\_SD, BAF\_SD, WF) | | required if `--report "true"` |
 | `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | required if `--report "true"` |
-
 
 
 ### Parameter Details:
@@ -151,7 +120,36 @@ See the `tests/` directory for example input files.
 
 
 
-## Outputs:
+## Usage
+
+### Testing
+
+The pipeline can be tested using the test profile and the images hosted on github using the container of your choice. 
+
+```bash
+container=docker # or apptainer or singularity
+
+# Full Mode
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_full,${container}
+
+# Partial Mode
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_partial,${container}
+```
+
+### Example Launch
+
+```bash
+nextflow run main.nf \
+    --dataset_name dataset \
+    --genome_version "$genome_version" \
+    --sample_file "$sample_file" \
+    --plink2samplemetadata "$plink2samplemetadata" \
+    --batch_size 10 \
+    --report true \
+    -c "$CONFIG_FILE"
+```
+
+## Outputs
 
 - **{dataset_name}**
   - **calls_unfiltered**
