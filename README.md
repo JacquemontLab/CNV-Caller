@@ -68,7 +68,7 @@ nextflow run main.nf \
     -c "$CONFIG_FILE"
 ```
 
-## Input Parameters:
+## Inputs:
 
 ### Base Parameters
 Parameters shared by both partial and full runs.
@@ -153,7 +153,7 @@ See the `tests/` directory for example input files.
 
 
 
-## Output:
+## Outputs:
 
 - **{dataset_name}**
   - **calls_unfiltered**
