@@ -21,7 +21,7 @@
 > Both modes share downstream processing steps such as CNV merging and reporting.
 
 
-## Prerequisites to Run the Pipeline
+## Requirements
 
 ### Software dependencies
 
@@ -32,27 +32,45 @@ Required software:
 * **Nextflow** – workflow engine (nextflow version 25.10.2)
 * **Docker** (Apptainer or Singularity) – to run containers
 
-You might need to pull the following containers if working offline:
+You might need to pull the following containers if working **offline**:
 * docker://ghcr.io/jacquemontlab/cnv_caller_report:latest
 * docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
 * docker://ghcr.io/jacquemontlab/python_etl_packages:latest
 
 
 
-## Quick-Start
-The pipeline can be tested using the test profile and the images hosted on github. 
+## Usage
+
+### Testing
+
+The pipeline can be tested using the test profile and the images hosted on github using the container of your choice. 
 
 ```bash
+container=docker # or apptainer or singularity
+
 # Full Mode
-nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_full,apptainer
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_full,${container}
 
 # Partial Mode
-nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_partial,apptainer
+nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_partial,${container}
 ```
 
-# Input Parameters:
+### Example Launch
 
-## Base Parameters
+```bash
+nextflow run main.nf \
+    --dataset_name dataset \
+    --genome_version "$genome_version" \
+    --sample_file "$sample_file" \
+    --plink2samplemetadata "$plink2samplemetadata" \
+    --batch_size 10 \
+    --report true \
+    -c "$CONFIG_FILE"
+```
+
+## Input Parameters:
+
+### Base Parameters
 Parameters shared by both partial and full runs.
 
 | Parameter | Description | Default | Required |
@@ -62,7 +80,7 @@ Parameters shared by both partial and full runs.
 | `genome_version` | Human genome assembly version. (accepted: `GRCh38`\|`GRCh37`) | GRCh38 | False |
 | `report` | Run summary statistics on all outputs. (accepted: `true`\|`false`) | false | False |
 
-## Mode: Full
+### Mode: Full
 
 | Parameter | Description | Default | Required |
 |-----------|-----------|-----------|-----------|
@@ -73,7 +91,7 @@ Parameters shared by both partial and full runs.
 | `batch_size` | Number of samples call CNVs in a single batch. | 64 | False |
 | `batch_num` | Constrict the number of batches to execute. Useful for tuning batch sizes and node configurations without running the whole dataset. | -1 (all) | False |
 
-## Mode: Partial
+### Mode: Partial
 
 For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CNVs with the minimal recommended filtering.
 
@@ -86,7 +104,7 @@ For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CN
 
 
 
-## Parameter Details:
+### Parameter Details:
 
 See the `tests/` directory for example input files.
 
@@ -135,7 +153,7 @@ See the `tests/` directory for example input files.
 
 
 
-# Output:
+## Output:
 
 - **{dataset_name}**
   - **calls_unfiltered**
@@ -194,9 +212,9 @@ The `sampleDB.tsv` fields are as follows:
 
 
 
-# Methodological Notes
+## Methodological Notes
 
-## Paragraph method, by Florian Bénitière, 04/08/2025 : **CNV Merging process**
+### Paragraph method, by Florian Bénitière, 04/08/2025 : **CNV Merging process**
 
 Copy Number Variants (CNVs) were called using two programs: PennCNV ([Wang et al., 2007](http://www.genome.org/cgi/doi/10.1101/gr.6861907)) and QuantiSNP ([Colella et al., 2007](https://doi.org/10.1093/nar/gkm076)).
 
@@ -207,8 +225,8 @@ CNVs from both tools were then merged to generate a unified CNV set. For each CN
 We next assessed the overlap of each CNV with **problematic regions**. These regions were compiled from the UCSC Genome Browser ([hgTables](https://genome.ucsc.edu/cgi-bin/hgTables)) and include segmental duplications, the major histocompatibility complex, centromeres, telomeres, and the UCSC Problematic Regions tracks.
 
 
-## Filtering Recommendations
-### CNVs
+### Filtering Recommendations
+#### CNVs
 For downstream analyses, we recommend filtering the final CNV set using the following criteria (based on results from the SPARK cohort; see `resources/docs/SPARK_CNV_dataset_report.pdf`):
 
 * **Two\_Algorithm\_Overlap \≥ 0.5** (validated by at least 50% overlap between both algorithms)
@@ -241,18 +259,18 @@ Our lab used previous versions of the CNV calling described in the following ref
 Theses articles used the method described in this previous repository:
 [https://github.com/JacquemontLab/MIND-GENESPARALLELCNV](https://github.com/JacquemontLab/MIND-GENESPARALLELCNV)
 
-### Problematic Regions
+#### Problematic Regions
 
 This region regroups multiple tables from UCSC Genome Browser ([hgTables](https://genome.ucsc.edu/cgi-bin/hgTables)): Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and Problematic Regions from UCSC.
 For details, please refer to the file CNV-Caller/resources/Genome_Regions/README.md 
 
 
-## Softwares Used
+### Softwares Used
 
 Within the pipeline, the GC model, the HMM profile and PFB files required by PennCNV are prepared. 
 CNVs are then called per individual on autosomes and chromosome X (only if the sample’s sex is known) using the container `docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3` and the following tools:
 
-### PennCNV
+#### PennCNV
 
 PennCNV ([Wang *et al.*, 2007](http://www.genome.org/cgi/doi/10.1101/gr.6861907))
 
@@ -296,7 +314,7 @@ perl detect_cnv.pl --test \
 | `hh550.hmm` | Illumina HumanHap550 arrays       | Optimized for 550k probe density and distribution        |           | 
 | `wgs.hmm`   | Whole-genome sequencing           | High-resolution data; dense and uniform coverage         |`wgs`      |
 
-### QuantiSNP
+#### QuantiSNP
 
 QuantiSNP ([Colella *et al.*, 2007](https://doi.org/10.1093/nar/gkm076))
 
@@ -331,7 +349,7 @@ quantisnp --chr ${chr} \
 [Git QuantiSNP](https://github.com/cwcyau/quantisnp)
 
 
-# Pipeline Execution and Technical Implementation
+## Pipeline Execution and Technical Implementation
 
  CNV-Caller uses batch processing to call CNVs in parallel. When configured on an HPC cluster, the samples can be batched in to groups of size _N_ where each sample is assigned a CPU on a compute node. Batches can also be run in parallel across _M_ nodes such that the total number of parallel processes would then be _M_ x _N_ . See **Configuration** on how to tune process batching.
 
@@ -340,21 +358,6 @@ quantisnp --chr ${chr} \
   <source media="(prefers-color-scheme: light)" srcset="img/CNV-Caller_dag_light_full.png">
   <img alt="Fallback image description" src="img/CNV-Caller_dag_light_full.png" style="max-width:55%; height:auto;">
 </picture>
-
-
-## Example Launch
-
-```bash
-nextflow run main.nf \
-    --dataset_name dataset \
-    --genome_version "$genome_version" \
-    --sample_file "$sample_file" \
-    --plink2samplemetadata "$plink2samplemetadata" \
-    --batch_size 10 \
-    --report true \
-    -c "$CONFIG_FILE" \
-    -resume
-```
 
 
 Or use a parameter yaml file to specify parameters
