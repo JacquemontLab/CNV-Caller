@@ -23,8 +23,6 @@
 
 ## Requirements
 
-### Software dependencies
-
 Refer to the template config files and adjust them to match your infrastructure.
 
 Required software:
