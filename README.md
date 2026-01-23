@@ -30,7 +30,7 @@ Required software:
 * **Nextflow** – workflow engine (nextflow version 25.10.2)
 * **Docker** (Apptainer or Singularity) – to run containers
 
-You might need to pull the following containers if working **offline**:
+You might need to pull the following containers if working **offline** to use them in your nextflow.config file:
 * docker://ghcr.io/jacquemontlab/cnv_caller_report:latest
 * docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
 * docker://ghcr.io/jacquemontlab/python_etl_packages:latest
@@ -122,7 +122,7 @@ See the `tests/` directory for example input files.
 
 ## Usage
 
-### Testing
+### Testing from Git
 
 The pipeline can be tested using the test profile and the images hosted on github using the container of your choice. 
 
@@ -136,7 +136,7 @@ nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_
 nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_partial,${container}
 ```
 
-### Example Launch
+### Example Launch once the repository downloaded
 
 ```bash
 nextflow run main.nf \
@@ -356,27 +356,12 @@ quantisnp --chr ${chr} \
 </picture>
 
 
-Or use a parameter yaml file to specify parameters
- eg:
-
-*__params.yaml__*
-```yaml
-dataset_name: My_Cohort
-genome_version: GRCh38
-plink2samplemetadata: /home/path_to/plink2samplemetadata.tsv
-sample_file: /home/path_to/sample_file.tsv
-batch_size: 180
-pfb_sample_size : 1000
-report : false
-pipeline_mode : full
-data_type : 'array'
-
-## Configuration 
+### Configuration 
 Configuration of the pipeline is necessary to match the needs of your cluster and dataset. What's provided below is a template for launching on an HPC using SLURM job managment with access to the internet for container retrieval. 
 
 In this configuration the lead process is launched on local and the larger jobs are automatically queued on compute nodes.
 
-The two major processes are `cnv_calling` and `generate_pfb` which may require a lot of resources. In our example `180` samples are loaded in to a compute node with 192 cpus and 750G of memory for calling cnvs. Using `maxForks` we'll ask for 10 nodes to be allocated at once. Using this configuration will allow for `1800` samples to be processed at once. 
+The two major processes are `cnv_calling` and `generate_pfb` which may require a lot of resources. In our example `180` samples are loaded in to a compute node with 192 cpus and 750G of memory for calling cnvs. Using `maxForks` we'll ask for 10 nodes to be allocated at once. Using this configuration will allow for `1800` samples to be processed at once. You can check specific infrastructure config files that have been used in `/setup`
 
 *__example.config__*
 ```nextflow
@@ -414,44 +399,4 @@ process {
         module = ['apptainer/1.3.5']
     }
 }
-
 ```
-If compute nodes lack internet access, the containers can be cached elsewhere and absolute paths can be used for the required processes. The default config is as follows:
-
-*__nextflow.config__*
-```nextflow
-profiles {
-
-    apptainer {
-        apptainer.enabled = true
-        process  {
-            container = 'docker://ghcr.io/jacquemontlab/python_etl_packages:latest'
-        
-            withLabel: penncnv_quantisnp {
-                container = 'docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3'
-
-            }
-
-            withLabel: Rmarkdown {
-                container = 'docker://ghcr.io/jacquemontlab/cnv_caller_report:latest'
-
-            }
-        }
-    }
-}
-```
-Nextflow allows for deep configuration which makes pipelines portable to both cloud, HPC and local execution. See [https://www.nextflow.io/docs/latest/config.html](https://www.nextflow.io/docs/latest/config.html) for more details.
-
-
-To launch make sure to include custom configurations using the -c parameter.
-
-```
-nextflow run https://github.com/JacquemontLab/CNV-Caller -profile apptainer -c example.config -params_file params.yaml 
-```
-
-Or if downloaded:
-
-```
-nextflow run main.nf -profile apptainer -c example.config -params_file params.yaml
-```
-
