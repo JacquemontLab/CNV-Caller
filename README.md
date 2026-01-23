@@ -75,21 +75,21 @@ Parameters shared by both partial and full runs.
 
 | Parameter | Description | Default | Required |
 |-----------|-----------|-----------|-----------|
-| `pipeline_mode` | Choose to run from raw BAF/LRR files or raw PennCNV and Quantisnp calls. (accepted: `full`\|`partial`) | full | True |
-| `dataset_name` | Name of the dataset, used for directory and report naming. | dataset | False |
-| `genome_version` | Human genome assembly version. (accepted: `GRCh38`\|`GRCh37`) | GRCh38 | False |
-| `report` | Run summary statistics on all outputs. (accepted: `true`\|`false`) | false | False |
+| `pipeline_mode` | Choose to run from raw BAF/LRR files or raw PennCNV and Quantisnp calls. (accepted: `full`\|`partial`) | full | Yes |
+| `dataset_name` | Name of the dataset, used for directory and report naming. | dataset | No |
+| `genome_version` | Human genome assembly version. (accepted: `GRCh38`\|`GRCh37`) | GRCh38 | No |
+| `report` | Run summary statistics on all outputs. (accepted: `true`\|`false`) | false | No |
 
 ### Mode: Full
 
 | Parameter | Description | Default | Required |
 |-----------|-----------|-----------|-----------|
-| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | True |
-| `sample_file` | A TSV file containing the Sample ID and the absolute path to the BAF_LRR file. See `Parameter Details` | | True |
-| `pfb_max_sample_size` | Adjust the number of samples to use to generate the pfb file for PennCNV | 1000 | False |
-| `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | array | False |
-| `batch_size` | Number of samples call CNVs in a single batch. | 64 | False |
-| `batch_num` | Constrict the number of batches to execute. Useful for tuning batch sizes and node configurations without running the whole dataset. | -1 (all) | False |
+| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | Yes |
+| `sample_file` | A TSV file containing the Sample ID and the absolute path to the BAF_LRR file. See `Parameter Details` | | Yes |
+| `pfb_max_sample_size` | Adjust the number of samples to use to generate the pfb file for PennCNV | 1000 | No |
+| `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | array | No |
+| `batch_size` | Number of samples call CNVs in a single batch. | 64 | No |
+| `batch_num` | Constrict the number of batches to execute. Useful for tuning batch sizes and node configurations without running the whole dataset. | -1 (all) | No |
 
 ### Mode: Partial
 
@@ -97,8 +97,8 @@ For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CN
 
 | Parameter | Description | Default | Required |
 |-----------|-----------|-----------|-----------|
-| `quantisnp_calls_path` |  Path to QuantiSNP raw CNVs file (.txt) | | True |
-| `penncnv_calls_path` | Path to PennCNV raw CNVs file (.txt) | | True |
+| `quantisnp_calls_path` |  Path to QuantiSNP raw CNVs file (.txt) | | Yes |
+| `penncnv_calls_path` | Path to PennCNV raw CNVs file (.txt) | | Yes |
 | `penncnv_qc_path` | QC metrics from PennCNV (SampleID → LRR\_SD, BAF\_SD, WF) | | required if `--report "true"` |
 | `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | required if `--report "true"` |
 
