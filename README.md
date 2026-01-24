@@ -31,9 +31,9 @@ Required software:
 * **Docker** (Apptainer or Singularity) – to run containers
 
 You might need to pull the following containers if working **offline** to use them in your nextflow.config file:
-* docker://ghcr.io/jacquemontlab/cnv_caller_report:latest
-* docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3
-* docker://ghcr.io/jacquemontlab/python_etl_packages:latest
+* **docker://ghcr.io/jacquemontlab/cnv_caller_report:latest**
+* **docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3**
+* **docker://ghcr.io/jacquemontlab/python_etl_packages:latest**
 
 
 ## Inputs
