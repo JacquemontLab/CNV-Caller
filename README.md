@@ -139,14 +139,16 @@ nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_
 ### Example Launch once the repository downloaded
 
 ```bash
+genome_version=GRCh38
+sample_file=tests/sampleFile.tsv
+plink2samplemetadata=tests/plink2samplemetadata.tsv
+
 nextflow run main.nf \
     --dataset_name dataset \
     --genome_version "$genome_version" \
     --sample_file "$sample_file" \
     --plink2samplemetadata "$plink2samplemetadata" \
-    --batch_size 10 \
-    --report true \
-    -c "$CONFIG_FILE"
+    --batch_size 10
 ```
 
 ## Outputs
