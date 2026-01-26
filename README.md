@@ -68,7 +68,7 @@ For users with PennCNV and Quantisnp raw calls. CNV-Caller will output merged CN
 | `quantisnp_calls_path` |  Path to QuantiSNP raw CNVs file (.txt) | | Yes |
 | `penncnv_calls_path` | Path to PennCNV raw CNVs file (.txt) | | Yes |
 | `penncnv_qc_path` | QC metrics from PennCNV (SampleID → LRR\_SD, BAF\_SD, WF) | | required if `--report "true"` |
-| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | required if `--report "true"` |
+| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Format</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | required if `--report "true"` |
 
 
 ### Parameter Details:
