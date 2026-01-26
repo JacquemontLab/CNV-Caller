@@ -52,7 +52,7 @@ Parameters shared by both partial and full runs.
 
 | Parameter | Description | Default | Required |
 |-----------|-----------|-----------|-----------|
-| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Help</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | Yes |
+| `plink2samplemetadata` | Sample metadata derived from plink, see `Parameter Details`. <details><summary>Format</summary><small>A TSV file containing `SampleID  Call_Rate  Sex  FatherID  MotherID`. *FatherID* and *MotherID* are only required if `--report "true"` is used.</small></details>| | Yes |
 | `sample_file` | A TSV file containing the Sample ID and the absolute path to the BAF_LRR file. See `Parameter Details` | | Yes |
 | `pfb_max_sample_size` | Adjust the number of samples to use to generate the pfb file for PennCNV | 1000 | No |
 | `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | array | No |
