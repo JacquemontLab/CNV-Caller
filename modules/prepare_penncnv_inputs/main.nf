@@ -67,7 +67,7 @@ process generate_pfb {
     echo "Using memory limit: \${MEM_MB} MB"
 
     echo ${list_best_BAF_LRR_Probes} | tr " " "\\n" | tr -d " " > batch_list.txt
-    compile_pfb.py  batch_list.txt pfb.tsv '\${MEM_MB}MB'
+    compile_pfb.py  batch_list.txt pfb.tsv \${MEM_MB}MB
     """
     }
 
