@@ -53,9 +53,21 @@ process generate_pfb {
     path 'pfb.tsv'      // PFB file (Population Frequency of B Allele)
 
     script:
+    // Compute memory in MB if task.memory exists; else leave null
+    def memMb = task.memory ? (task.memory.toMega() * 0.85).intValue() : null
+
     """
+    # If memMb > 0 (HPC), use it; else detect 85% of VM RAM
+    if [ ${memMb} -gt 0 ]; then
+        MEM_MB=${memMb}
+    else
+        MEM_MB=\$(free -k | awk '/^Mem:/ {print int(\$2*0.85/1024)}')
+    fi
+
+    echo "Using memory limit: \${MEM_MB} MB"
+
     echo ${list_best_BAF_LRR_Probes} | tr " " "\\n" | tr -d " " > batch_list.txt
-    compile_pfb.py  batch_list.txt pfb.tsv '${(task.memory.toMega() * 0.75) as int}MB'
+    compile_pfb.py  batch_list.txt pfb.tsv '\${MEM_MB}MB'
     """
     }
 
