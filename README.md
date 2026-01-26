@@ -140,8 +140,8 @@ nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_
 
 ```bash
 genome_version=GRCh38
-sample_file=tests/sampleFile.tsv
-plink2samplemetadata=tests/plink2samplemetadata.tsv
+sample_file=${PWD}/tests/sampleFile.tsv
+plink2samplemetadata=${PWD}/tests/plink2samplemetadata.tsv
 container=docker # or apptainer or singularity
 
 nextflow run main.nf \
