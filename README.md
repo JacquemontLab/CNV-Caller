@@ -142,13 +142,15 @@ nextflow run https://github.com/JacquemontLab/CNV-Caller.git -profile test,test_
 genome_version=GRCh38
 sample_file=tests/sampleFile.tsv
 plink2samplemetadata=tests/plink2samplemetadata.tsv
+container=docker # or apptainer or singularity
 
 nextflow run main.nf \
     --dataset_name dataset \
     --genome_version "$genome_version" \
     --sample_file "$sample_file" \
     --plink2samplemetadata "$plink2samplemetadata" \
-    --batch_size 10
+    --batch_size 10 \
+    -profile ${container}
 ```
 
 ## Outputs
