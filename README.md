@@ -87,9 +87,11 @@ See the `tests/` directory for example input files.
   
   #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
 
+  ```
   99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
   99HI0700A /home/example/path/99HI0700A.BAF_LRR.tsv
   99HI0697A /home/example/path/99HI0697A.BAF_LRR.tsv
+  ```
 
   > The filenames should follow the above format: **{SampleID}.BAF\_LRR.tsv**.
 
