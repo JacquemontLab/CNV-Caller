@@ -23,8 +23,8 @@ USER $MAMBA_USER
 RUN micromamba install -y -n base -c conda-forge \
         python=3.11 \
         polars \
-        duckdb \
-        duckdb-cli \
+        duckdb=1.2.0 \
+        duckdb-cli=1.2.0 \
         psutil \
         pandas \
         matplotlib \
