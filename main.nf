@@ -33,9 +33,11 @@ process buildSummary {
     # Calculate duration in seconds
     duration=\$(( end_sec - start_sec ))
 
-    # Convert duration to minutes and seconds
-    minutes=\$(( duration / 60 ))
+    # Convert duration to hours, minutes, seconds
+    hours=\$(( duration / 3600 ))
+    minutes=\$(( (duration % 3600) / 60 ))
     seconds=\$(( duration % 60 ))
+
 
     cat <<EOF > launch_report.txt
     CNV_Caller ${cohort_tag} run summary:
@@ -47,7 +49,7 @@ process buildSummary {
     genome_version: ${genome_version}
     launch_user: ${workflow.userName}
     start_time: ${workflow.start}
-    duration: \${minutes} minutes and \${seconds} seconds
+    duration: \${hours}h \${minutes}m \${seconds}s
 
     Command:
     ${workflow.commandLine}
