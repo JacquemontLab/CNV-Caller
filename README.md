@@ -190,9 +190,9 @@ The `CNV_merged_dataset.tsv` fields are as follows:
 | **Confidence\_max**             | Maximum confidence score among merged CNVs (reflecting the strongest supporting evidence).            |
 | **Num\_Probes\_max**            | Maximum number of probes supporting the CNV across merged CNVs.            |
 | **Num\_Merged\_CNVs**           | Number of CNVs merged into this event.            |
-| **QuantiSNP\_Overlap**          | Fraction of the CNV region overlapping QuantiSNP calls.            |
-| **PennCNV\_Overlap**            | Fraction of the CNV region overlapping PennCNV calls.            |
-| **Two\_Algorithm\_Overlap**     | Fraction of the CNV region supported by both QuantiSNP and PennCNV.            |
+| **QuantiSNP\_Overlap**          | Fraction of the CNV overlapping QuantiSNP calls.            |
+| **PennCNV\_Overlap**            | Fraction of the CNV overlapping PennCNV calls.            |
+| **Two\_Algorithm\_Overlap**     | Fraction of the CNV supported by both QuantiSNP and PennCNV.            |
 | **ProblematicRegions\_Overlap** | Overlap with problematic regions (Segmental Duplications, Major Histocompatibility Complex, Centromeres, Telomeres, and UCSC Problematic Regions), compiled from the UCSC Genome Browser (hgTables), for more details see section `Problematic Regions`.|
 
 
