@@ -2,6 +2,8 @@
 
 [Git Repository CNV-Caller](https://github.com/JacquemontLab/CNV-Caller)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18607246.svg)](https://doi.org/10.5281/zenodo.18607246)
+
 # CNV-Caller
 #### A Nextflow pipeline for the discovery of copy number variants (CNVs) using Hidden Markov Model based CNV callers PennCNV and QuantiSNP. The pipeline utilizes B-Allele Frequency (BAF) and the Log-R Ratio (LRR) of probes on a standard genotyping array to call CNVs.
 
