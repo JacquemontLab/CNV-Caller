@@ -28,9 +28,9 @@ Refer to the template config files and adjust them to match your infrastructure.
 Required software:
 
 * **Nextflow** – workflow engine (nextflow version 25.10.2)
-* **Docker** (Apptainer or Singularity) – to run containers
+* **Docker** (Apptainer or Singularity) – to run s
 
-You might need to pull the following containers if working **offline** to use them in your `nextflow.config` file:
+You might need to pull the following s if working **offline** to use them in your `nextflow.config` file:
 * **docker://ghcr.io/jacquemontlab/cnv_caller_report:latest**
 * **docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3**
 * **docker://ghcr.io/jacquemontlab/python_etl_packages:latest**
@@ -126,7 +126,7 @@ See the `tests/` directory for example input files.
 
 ### Testing from Git
 
-The pipeline can be tested using the test profile and the images hosted on github using the container of your choice. 
+The pipeline can be tested using the test profile and the images hosted on github using the container platform of your choice. 
 
 ```bash
 container=docker # or apptainer or singularity
