@@ -48,7 +48,7 @@ nextflow_pipeline {
              penncnv_qc_path = "${projectDir}/tests/partial/PennCNV_QC.tsv"
              genome_version = "GRCh38"
              dataset_name = "T2"
-             report = false
+             report = True
              outDir = "results/tests"
              pipeline_mode = "partial"
             }
