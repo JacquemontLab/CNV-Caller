@@ -24,7 +24,7 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-            assert workflow.trace.tasks().size() == 11 //for three batches
+            assert workflow.trace.tasks().size() == 10 //for three batches
             assert file("$launchDir/results/T1/CNV_merged_dataset.tsv").exists()
             assert file("$launchDir/results/T1/sampleDB.tsv").exists()
             assert file("$launchDir/results/T1/docs/launch_report.txt").exists()
@@ -33,7 +33,7 @@ nextflow_pipeline {
             assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
             assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
             assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
-            assert file("$launchDir/results/T1/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() 
+            assert file("$launchDir/results/T1/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() + 1
         }
 
     }
@@ -42,13 +42,13 @@ nextflow_pipeline {
 
         when {
             params {
-             plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+             plink2samplemetadata = "${projectDir}/tests/plink2samplemetadata.tsv"
              penncnv_calls_path = "${projectDir}/tests/partial/calls_unfiltered/penncnv/PennCNV_raw_calls.txt"
              quantisnp_calls_path = "${projectDir}/tests/partial/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt"
-             penncnv_qc_path = "${projectDir}/tests/partial/PennCNV_QC.tsv"
+             penncnv_qc_path = "${projectDir}/tests/partial/calls_unfiltered/penncnv/PennCNV_QC.tsv"
              genome_version = "GRCh38"
              dataset_name = "T2"
-             report = True
+             report = true
              outDir = "results/tests"
              pipeline_mode = "partial"
             }

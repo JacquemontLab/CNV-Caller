@@ -75,9 +75,9 @@ def main():
                               new_columns=["Name","Chr","Position","LRR", "BAF"],
                               schema_overrides=[pl.String, pl.Categorical, pl.Int64, pl.Float64, pl.Float64])
                               .drop_nans()
-                              .sink_parquet(pl.PartitionMaxSize(
+                              .sink_parquet(pl.PartitionBy(
                                                 "./pfb_parquet/",
-                                                max_size = 10_000_000
+                                                max_rows_per_file = 10_000_000
                                                 ),
                                             mkdir = True,
                                             maintain_order = False, 
