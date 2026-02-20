@@ -77,7 +77,7 @@ def main():
                               .drop_nans()
                               .sink_parquet(pl.PartitionBy(
                                                 "./pfb_parquet/",
-                                                max_rows_per_file = 10_000_000
+                                                max_rows_per_file = 10_000_000 #these could be adjusted in the future to be more flexible
                                                 ),
                                             mkdir = True,
                                             maintain_order = False, 
