@@ -161,6 +161,7 @@ params.report                   = false
 params.genome_version           = "GRCh38"
 params.dataset_name             = "dataset"
 params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
+params.skip_hmm_training        = false
 
 // Full specific
 params.sample_file              = ""
@@ -211,7 +212,8 @@ workflow {
                                  params.plink2samplemetadata,
                                  file("${projectDir}/resources/GC_correction/${params.genome_version}/gc_content_1k_windows.bed"),
                                  params.pfb_max_sample_size,
-                                 params.data_type                                                                                        
+                                 params.data_type,
+                                 params.skip_hmm_training                                                                                        
                                 )
 
         '''

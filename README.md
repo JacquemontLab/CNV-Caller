@@ -61,6 +61,7 @@ Parameters shared by both partial and full runs.
 | `data_type` | Specify if BAF/LRR values are from Array-based intensity values or Whole Genome Sequencing SNP ratios. (accepted: `array`\|`wgs`) | array | No |
 | `batch_size` | Number of samples call CNVs in a single batch. | 64 | No |
 | `batch_num` | Constrict the number of batches to execute. Useful for tuning batch sizes and node configurations without running the whole dataset. | -1 (all) | No |
+| `skip_hmm_training` | Use default hmm model for penncnv? | false | No |
 
 ### Mode: Partial
 

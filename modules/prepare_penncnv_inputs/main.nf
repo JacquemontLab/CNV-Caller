@@ -76,52 +76,68 @@ process generate_pfb {
 
 // Step 3: Generate HMM from the first 10 best samples
 process generate_hmm {
-    tag "Building hmm model from default ${data_type} model"
+    tag "${data_type} mode"
     label "penncnv_quantisnp"
 
     input:
     path list_best_BAF_LRR_Probes    // List of paths to top X sample files
     path pfb_file                    // PFB file (Population Frequency of B Allele)
-    val data_type
+    val data_type                    // Choose which starting model 'wgs' or 'array'
+    val skip_hmm_training            // SKip training and just use default model?
     
     output:
     path 'hmm_trained.hmm'      // HMM file
 
     script:
-    """
-    # take first 10 lines (sample paths) from the list
+    if(skip_hmm_training){
+        """
 
-    echo ${list_best_BAF_LRR_Probes} | cut -d " " -f1-10 | tr " " "\\n" | tr -d " " > list_baf_lrr.txt
-    grep '\\.gz\$' list_baf_lrr.txt | parallel -j ${task.cpus} gunzip {} -f 
-    find . -maxdepth 1 -iname "*.baf_lrr.tsv" -printf '%f\\n' > list_baf_lrr.txt
-  
-
-    # We start from a pre-existing HMM:
-    #   - hhall.hmm  -> general high-density SNP arrays
-    #   - hh550.hmm  -> Illumina HumanHap550-specific
-    #   - wgs.hmm    -> whole-genome sequencing
-    #
-    # Each HMM differs in emission and transition probabilities because:
-    #   - SNP arrays have fewer probes and noisier signals (hhall, hh550)
-    #   - WGS has dense, uniform coverage (wgs)
-    # Using the correct starting HMM improves CNV calling accuracy.
-
-    if [[ "${data_type}" == "array"  ]];then
-        model="hhall.hmm"
-    elif [[ "${data_type}"  == "wgs" ]];then
-        model="wgs.hmm"
-    else
-        echo "Invalid datatype. Use either 'array' or 'wgs'."
+         if [[ "${data_type}" == "array"  ]];then
+            cp "/usr/local/PennCNV-1.0.5/lib/hhall.hmm" 'hmm_trained.hmm'
+        elif [[ "${data_type}"  == "wgs" ]];then
+            cp "/usr/local/PennCNV-1.0.5/lib/wgs.hmm" 'hmm_trained.hmm' 
+        else
+            echo "Invalid datatype. Use either 'array' or 'wgs'."
         exit 1 
-    fi
+        fi
+        """
+    } else {
+        
+        """
+        # take first 10 lines (sample paths) from the list
+
+        echo ${list_best_BAF_LRR_Probes} | cut -d " " -f1-10 | tr " " "\\n" | tr -d " " > list_baf_lrr.txt
+        grep '\\.gz\$' list_baf_lrr.txt | parallel -j ${task.cpus} gunzip {} -f 
+        find . -maxdepth 1 -iname "*.baf_lrr.tsv" -printf '%f\\n' > list_baf_lrr.txt
     
-    /usr/local/bin/timedev penncnv --train \
-        --hmmfile "/usr/local/PennCNV-1.0.5/lib/\$model"  \
-        --pfbfile "$pfb_file" \
-        --listfile list_baf_lrr.txt \
-        --output hmm_trained
-    """
+
+        # We start from a pre-existing HMM:
+        #   - hhall.hmm  -> general high-density SNP arrays
+        #   - hh550.hmm  -> Illumina HumanHap550-specific
+        #   - wgs.hmm    -> whole-genome sequencing
+        #
+        # Each HMM differs in emission and transition probabilities because:
+        #   - SNP arrays have fewer probes and noisier signals (hhall, hh550)
+        #   - WGS has dense, uniform coverage (wgs)
+        # Using the correct starting HMM improves CNV calling accuracy.
+
+        if [[ "${data_type}" == "array"  ]];then
+            model="hhall.hmm"
+        elif [[ "${data_type}"  == "wgs" ]];then
+            model="wgs.hmm"
+        else
+            echo "Invalid datatype. Use either 'array' or 'wgs'."
+            exit 1 
+        fi
+        
+        /usr/local/bin/timedev penncnv --train \
+            --hmmfile "/usr/local/PennCNV-1.0.5/lib/\$model"  \
+            --pfbfile "$pfb_file" \
+            --listfile list_baf_lrr.txt \
+            --output hmm_trained
+        """
     }
+}
 
 
 
@@ -167,6 +183,7 @@ workflow PREPARE_PENNCNV_INPUTS {
         gc_content_windows
         pfb_max_sample_size
         data_type
+        skip_hmm_training
         
     main:
         // Step 1. Identify the top X samples by call rate.
@@ -189,7 +206,8 @@ workflow PREPARE_PENNCNV_INPUTS {
         hmm_file = generate_hmm(
             best10_sample_list ,
             pfb_file,
-            data_type
+            data_type,
+            skip_hmm_training
         )
 
         // Step 4. Annotate SNPs with GC content using precomputed genomic windows.

@@ -19,6 +19,7 @@ nextflow_pipeline {
              pfb_max_sample_size = 3
              outDir = "results/tests"
              data_type = "array"
+             skip_hmm_training = true
             }
         }
 
