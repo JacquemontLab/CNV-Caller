@@ -20,6 +20,7 @@ nextflow_pipeline {
              outDir = "results/tests"
              data_type = "array"
              skip_hmm_training = true
+             parallel_mode = "parallel"
             }
         }
 

@@ -20,6 +20,7 @@ process callBatchCNVs {
     path gcmodel_file
     path sexfile
     val genome_version
+    val parallel_mode
    
     output:
     path "*.penncnv.qc",        emit: penncnv_qc_raw
@@ -57,7 +58,7 @@ process callBatchCNVs {
                     --levels \$levels \
                     --config \$config \
                     --chr \$chr \
-                    --mode parallel \
+                    --mode ${parallel_mode} \
                     --cpus ${task.cpus}
     """
 }
@@ -71,6 +72,7 @@ workflow  CALL_CNV {
     gc_content_windows       //gc model generated from prepare_penncnv_params
     sexfile                  //plink data extracted using extract_plink_data
     genome_version           //resource directory pointing to per-chromosome 1k binned gc content regions
+    parallel_mode
 
 
     main:
@@ -81,7 +83,8 @@ workflow  CALL_CNV {
                     hmm_file,
                     gc_content_windows,
                     sexfile,
-                    genome_version
+                    genome_version,
+                    parallel_mode
                 )
 
 

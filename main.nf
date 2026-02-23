@@ -161,15 +161,17 @@ params.report                   = false
 params.genome_version           = "GRCh38"
 params.dataset_name             = "dataset"
 params.git_hash                 = "git -C ${projectDir} rev-parse HEAD".execute().text.trim()
-params.skip_hmm_training        = false
+
 
 // Full specific
 params.sample_file              = ""
 params.pfb_max_sample_size      = 1000
 params.data_type                = "array"
 params.batch_size               = 64
+params.skip_hmm_training        = false
+params.parallel_mode            = "parallel"  //choose 'taskset' or gnu 'parallel'
 params.batch_num                = -1 // for tuning batch sizes: default -1 means take all batches. 
-                                     // Any other number restricts the execution to N number of batches  
+                                     // Any other number restricts the execution to N number of batches
 
 // Partial specific
 params.penncnv_qc_path          = ""
@@ -224,7 +226,8 @@ workflow {
                                 PREPARE_PENNCNV_INPUTS.out.hmm_file,                                    // HMM file
                                 PREPARE_PENNCNV_INPUTS.out.gc_model,                                    // GC model
                                 plink_ch.sexfile,                                                       // Sexfile from metadata input 
-                                params.genome_version                                                   // genome version for choosing gc content directory                
+                                params.genome_version,                                                  // genome version for choosing gc content directory
+                                params.parallel_mode                
                               )
         
         // Collect outputs
