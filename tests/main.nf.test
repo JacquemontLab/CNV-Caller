@@ -1,23 +1,25 @@
 
-//to launch the test on local :
-// nf-test test tests/main.nf.test --profile apptainer,local
+// To launch the test on local :
+// nf-test test tests/main.nf.test --profile test,apptainer
+
+
 nextflow_pipeline {
 
     name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
     script "main.nf"
 
-    test("Full run should run without failures and produce final outputs and have the correct number of processes.SampleDB should return with the same number of samples given.") {
+    test("Full run should exit without errors") {
 
         when {
             params {
-             plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
+             plink2samplemetadata = "${projectDir}/tests/plink2samplemetadata.tsv"
              sample_file = "${projectDir}/tests/sampleFile.tsv"
              batch_size = 2
              genome_version = "GRCh38"
-             dataset_name = "T1"
+             dataset_name = "test_full"
              report = false
              pfb_max_sample_size = 3
-             outDir = "results/tests"
+             pipeline_mode = "full"
              data_type = "array"
              skip_hmm_training = true
              parallel_mode = "parallel"
@@ -27,17 +29,16 @@ nextflow_pipeline {
         then {
             assert workflow.success
             assert workflow.trace.tasks().size() == 10 //for three batches
-            assert file("$launchDir/results/T1/CNV_merged_dataset.tsv").exists()
-            assert file("$launchDir/results/T1/sampleDB.tsv").exists()
-            assert file("$launchDir/results/T1/docs/launch_report.txt").exists()
-            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_CNV.tsv").exists()
-            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_QC.tsv").exists()
-            assert file("$launchDir/results/T1/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
-            assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
-            assert file("$launchDir/results/T1/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
-            assert file("$launchDir/results/T1/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() + 1
+            assert file("$launchDir/results/test_full/CNV_merged_dataset.tsv").exists()
+            assert file("$launchDir/results/test_full/sampleDB.tsv").exists()
+            assert file("$launchDir/results/test_full/docs/launch_report.txt").exists()
+            assert file("$launchDir/results/test_full/calls_unfiltered/penncnv/PennCNV_CNV.tsv").exists()
+            assert file("$launchDir/results/test_full/calls_unfiltered/penncnv/PennCNV_QC.tsv").exists()
+            assert file("$launchDir/results/test_full/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_full/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
+            assert file("$launchDir/results/test_full/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_full/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() + 1
         }
-
     }
 
     test("Partial run should exit without errors") {
@@ -49,43 +50,50 @@ nextflow_pipeline {
              quantisnp_calls_path = "${projectDir}/tests/partial/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt"
              penncnv_qc_path = "${projectDir}/tests/partial/calls_unfiltered/penncnv/PennCNV_QC.tsv"
              genome_version = "GRCh38"
-             dataset_name = "T2"
+             dataset_name = "test_partial"
              report = false
-             outDir = "results/tests"
              pipeline_mode = "partial"
             }
         }
 
         then {
             assert workflow.success
+            assert file("$launchDir/results/test_partial/sampleDB.tsv").exists()
+            assert file("$launchDir/results/test_partial/docs/launch_report.txt").exists()
+            assert file("$launchDir/results/test_partial/CNV_merged_dataset.tsv").exists()
+            assert file("$launchDir/results/test_partial/calls_unfiltered/penncnv/PennCNV_CNV.tsv").exists()
+            assert file("$launchDir/results/test_partial/calls_unfiltered/penncnv/PennCNV_QC.tsv").exists()
+            assert file("$launchDir/results/test_partial/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_partial/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_partial/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
         }
-
     }
 
+    test("Partial run with report") {
 
-//   name "T2:Test Full Pipeline Workflow main.nf with report"
-//  script "main.nf"
+        when {
+            params {
+             plink2samplemetadata = "${projectDir}/tests/partial_report/plink2samplemetadata.tsv"
+             penncnv_calls_path = "${projectDir}/tests/partial_report/calls_unfiltered/penncnv/PennCNV_raw_calls.txt"
+             quantisnp_calls_path = "${projectDir}/tests/partial_report/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt"
+             penncnv_qc_path = "${projectDir}/tests/partial_report/calls_unfiltered/penncnv/PennCNV_QC.tsv"
+             genome_version = "GRCh38"
+             dataset_name = "test_partial_report"
+             report = true
+             pipeline_mode = "partial"
+            }
+        }
 
-//   test("Should run without failures ") {
-
-//       when {
-//           params {
-//            plink2samplemetadata_tsv = "${projectDir}/tests/metadata.tsv"
-//            list_sample_baflrrpath = "${projectDir}/tests/samplefile.tsv"
-//            batch_size = 3
-//            genome_version = "GRCh38"
-//           dataset_name = "T2"
-//          report = true
-//             pfb_max_sample_size = 3
-//             outDir = "results/tests"
-//            }
-//        }
-//
-//        then {
-//            assert workflow.success
-//
-//        }
-
-//    }
-
+        then {
+            assert workflow.success
+            assert file("$launchDir/results/test_partial_report/sampleDB.tsv").exists()
+            assert file("$launchDir/results/test_partial_report/docs/launch_report.txt").exists()
+            assert file("$launchDir/results/test_partial_report/CNV_merged_dataset.tsv").exists()
+            assert file("$launchDir/results/test_partial_report/calls_unfiltered/penncnv/PennCNV_CNV.tsv").exists()
+            assert file("$launchDir/results/test_partial_report/calls_unfiltered/penncnv/PennCNV_QC.tsv").exists()
+            assert file("$launchDir/results/test_partial_report/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_partial_report/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
+            assert file("$launchDir/results/test_partial_report/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
+        }
+    }
 }
