@@ -5,7 +5,7 @@
 
 nextflow_pipeline {
 
-    name "Test Full Pipeline and Partial Workflow main.nf basic compilation without report"
+    name "Test Full Pipeline and Partial Workflow main.nf basic compilation with report"
     script "main.nf"
 
     test("Full run should exit without errors") {
