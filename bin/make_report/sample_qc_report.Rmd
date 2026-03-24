@@ -39,6 +39,8 @@ qc_df <- read.delim(params$qc_input, stringsAsFactors = FALSE,
   sep = "\t",
   comment.char = "#")
 
+
+
 # Calculate pass/fail logical columns for each metric
 qc_df <- qc_df %>%
   mutate(
@@ -53,11 +55,11 @@ qc_df <- qc_df %>%
 fail_counts <- qc_df %>%
   summarise(
     total_samples = scales::comma(n()),
-    fail_Call_Rate = scales::comma(sum(!pass_Call_Rate)),
-    fail_LRR_SD = scales::comma(sum(!pass_LRR_SD)),
-    fail_BAF_DRIFT = scales::comma(sum(!pass_BAF_DRIFT)),
-    fail_WF = scales::comma(sum(!pass_WF)),
-    pass_all = scales::comma(sum(pass_all))
+    fail_Call_Rate = scales::comma(sum(!pass_Call_Rate,na.rm=TRUE)),
+    fail_LRR_SD = scales::comma(sum(!pass_LRR_SD,na.rm=TRUE)),
+    fail_BAF_DRIFT = scales::comma(sum(!pass_BAF_DRIFT,na.rm=TRUE)),
+    fail_WF = scales::comma(sum(!pass_WF,na.rm=TRUE)),
+    pass_all = scales::comma(sum(pass_all,na.rm=TRUE))
   )
 
 # Count samples by Sex, handling missing column

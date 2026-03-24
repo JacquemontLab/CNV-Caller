@@ -90,26 +90,28 @@ if TYPE_COL:
         df_cnv = pl.scan_csv(FILE_CNV, 
                              separator = "\t", 
                              schema_overrides={f"{TYPE_COL}": pl.Categorical, 
-                                           "Chr": pl.Categorical},infer_schema_length=1000000)
+                                           "Chr": pl.Categorical,
+                                           "SampleID": pl.Utf8},infer_schema_length=1000000)
         print(f"Loading {FILE_CNV} in tsv mode and using {TYPE_COL} as type column")
     #casting to categorical for performance 
     else:
         df_cnv = pl.scan_parquet(FILE_CNV)
         df_cnv = df_cnv.with_columns(pl.col(f"{TYPE_COL}").cast(pl.Categorical),
-                                     pl.col("Chr").cast(pl.Categorical))
+                                     pl.col("Chr").cast(pl.Categorical),
+                                     pl.col("SampleID").cast(pl.Utf8))
         print(f"Loading {FILE_CNV} in parquet mode and using {TYPE_COL} as type column")
 else:
     if tsv_mode:
         print(f"Loading {FILE_CNV} in tsv mode without type column")
         df_cnv = pl.scan_csv(FILE_CNV, 
                              separator = "\t", 
-                             schema_overrides={"Chr": pl.Categorical},infer_schema_length=1000000)
+                             schema_overrides={"Chr": pl.Categorical,
+                                               "SampleID": pl.Utf8},infer_schema_length=1000000)
     else:
         print(f"Loading {FILE_CNV} in parquet mode and without type column")
         df_cnv = pl.scan_parquet(FILE_CNV)
         df_cnv = df_cnv.with_columns(pl.col("Chr").cast(pl.Categorical))
-        
-df_cnv = df_cnv.with_columns(pl.col("SampleID").cast(pl.Utf8))
+        df_cnv = df_cnv.with_columns(pl.col("SampleID").cast(pl.Utf8))
 
 print("Filtering for trios that are completely found in the cnv table...")
 
