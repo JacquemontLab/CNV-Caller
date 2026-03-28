@@ -63,7 +63,7 @@ ggplot(child_cnv[child_cnv$Type %in% c("DUP","DEL"),], aes(x = Length, fill = Ty
   ) +
   annotation_logticks(sides = "bp") +
   scale_x_log10(labels = label_number(scale_cut = cut_si("bp"))) +
-  scale_fill_manual(values = c("steelblue", "tomato"))  # manually set two colors
+  scale_fill_manual(values = c("DUP" = "steelblue", "DEL" = "tomato"))  # manually set two colors
 
 summary_stats <- summary(child_cnv$Length)
 print(summary_stats)
