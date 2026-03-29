@@ -83,8 +83,8 @@ process mergeSampleMetadata {
              CAST(meta.SampleID AS VARCHAR) AS SampleID,
              meta.* EXCLUDE SampleID,
              pennqc.* EXCLUDE SampleID
-         FROM read_csv_auto('$penncnv_qc', sep='\t', header=true) AS pennqc
-         LEFT JOIN read_csv_auto('$plink2samplemetadata', sep='\t', header=true) AS meta
+         FROM read_csv_auto('$penncnv_qc', sep='\t', header=true, nullstr='NA') AS pennqc
+         LEFT JOIN read_csv_auto('$plink2samplemetadata', sep='\t', header=true, nullstr='NA') AS meta
          ON CAST(pennqc.SampleID AS VARCHAR) = CAST(meta.SampleID AS VARCHAR)
 
     )  TO 'sampleDB.tsv' (HEADER, DELIMITER '\t');
