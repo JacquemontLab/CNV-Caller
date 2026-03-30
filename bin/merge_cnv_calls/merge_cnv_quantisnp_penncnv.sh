@@ -21,8 +21,8 @@
 #   ./merge_cnv_quantisnp_penncnv.sh <quantisnp_file> <penncnv_file> <probe_file> <regions_file> <genome_version> <output_file>
 #
 # Arguments:
-#   <quantisnp_file>   : QuantiSNP CNV input file (gzipped QuantiSNP raw CNVs)
-#   <penncnv_file>     : PennCNV CNV input file (gzipped PennCNV raw CNVs)
+#   <quantisnp_file>   : QuantiSNP CNV input file (txt QuantiSNP raw CNVs)
+#   <penncnv_file>     : PennCNV CNV input file (txt PennCNV raw CNVs)
 #   <regions_file>     : BED-like file of genome annotation regions (e.g., telomeres)
 #   <genome_version>   : Genome version string (e.g., GRCh37, GRCh38)
 #   <output_file>      : Output filename for the merged CNV results
@@ -37,8 +37,8 @@ if [ "$#" -ne 5 ]; then
     echo "Usage: $0 <quantisnp_file> <penncnv_file> <regions_file> <genome_version> <output_file>"
     echo ""
     echo "Arguments:"
-    echo "  <quantisnp_file>   : Path to QuantiSNP raw CNVs file (.txt.gz)"
-    echo "  <penncnv_file>     : Path to PennCNV raw CNVs file (.txt.gz)"
+    echo "  <quantisnp_file>   : Path to QuantiSNP raw CNVs file (.txt)"
+    echo "  <penncnv_file>     : Path to PennCNV raw CNVs file (.txt)"
     echo "  <regions_file>     : Path to BED-like genome annotation file"
     echo "  <genome_version>   : Genome version string (e.g., GRCh37, GRCh38)"
     echo "  <output_file>      : Path to output file for merged CNV table"
