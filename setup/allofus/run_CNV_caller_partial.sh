@@ -12,7 +12,7 @@ plink2samplemetadata=~/plink/Plink2SampleMetadata/results/sample_metadata_from_p
 
 
 nextflow run ~/CNV-Caller/main.nf \
---pipeline_mode pipeline_partial --dataset_name AllOfUs_tierv8_Array_GRCh38 --genome_version GRCh38 \
+--pipeline_mode partial --dataset_name AllOfUs_tierv8_Array_GRCh38 --genome_version GRCh38 \
 --penncnv_calls_path $penncnv_calls_path \
 --quantisnp_calls_path $quantisnp_calls_path \
 --penncnv_qc_path $penncnv_qc_path \
