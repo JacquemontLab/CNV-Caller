@@ -92,7 +92,7 @@ See the `tests/` directory for example input files.
 
   > Can be generated using [Git Repository Plink2SampleMetadata](https://github.com/JacquemontLab/Plink2SampleMetadata)
   
-  #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
+  #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file (no header), eg:
 
   ```
   99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
