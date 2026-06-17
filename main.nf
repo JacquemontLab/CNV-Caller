@@ -130,16 +130,29 @@ process extractPlink {
 
     script:
     """
+    HEADER=\$(head -n 1 "${plink2samplemetadata}")
+
+    FATHER="NULL AS FatherID"
+    MOTHER="NULL AS MotherID"
+
+    if echo "\$HEADER" | grep -q "FatherID"; then
+        FATHER="FatherID"
+    fi
+
+    if echo "\$HEADER" | grep -q "MotherID"; then
+        MOTHER="MotherID"
+    fi
+
     duckdb -c "
     COPY (
-        SELECT SampleID, Sex
-        FROM read_csv_auto('$plink2samplemetadata', sep='\t', header=true)
-    ) TO 'sexfile.tsv' (HEADER, DELIMITER '\\t');
+        SELECT SampleID, \${FATHER}, \${MOTHER}
+        FROM read_csv_auto('${plink2samplemetadata}', sep='\t', header=true)
+    ) TO 'trio.tsv' (HEADER, DELIMITER '\t');
 
     COPY (
-        SELECT SampleID, FatherID, MotherID
-        FROM read_csv_auto('$plink2samplemetadata', sep='\t', header=true)
-    ) TO 'trio.tsv' (HEADER, DELIMITER '\\t');
+        SELECT SampleID, Sex
+        FROM read_csv_auto('${plink2samplemetadata}', sep='\t', header=true)
+    ) TO 'sexfile.tsv' (HEADER, DELIMITER '\t');
     "
     """
 }
