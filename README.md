@@ -31,9 +31,9 @@ Refer to the template config files and adjust them to match your infrastructure.
 Required software:
 
 * **Nextflow** – workflow engine (nextflow version 25.10.2)
-* **Docker** (Apptainer or Singularity) – to run s
+* **Docker** (Apptainer or Singularity) – to run containers
 
-You might need to pull the following s if working **offline** to use them in your `nextflow.config` file:
+You might need to pull the following containers if working **offline** to use them in your `nextflow.config` file:
 * **docker://ghcr.io/jacquemontlab/cnv_caller_report:latest**
 * **docker://ghcr.io/jacquemontlab/penncnv_quantisnp:v2.3**
 * **docker://ghcr.io/jacquemontlab/python_etl_packages:latest**
@@ -92,15 +92,17 @@ See the `tests/` directory for example input files.
 
   > Can be generated using [Git Repository Plink2SampleMetadata](https://github.com/JacquemontLab/Plink2SampleMetadata)
   
-  #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file (no header), eg:
+  #### **sample\_file**: A TSV file containing the Sample ID and the absolute path to the BAF_LRR file, eg:
 
   ```
+  sampleID  path_to_BAF_LRR
   99HI0698C /home/example/path/99HI0698C.BAF_LRR.tsv
   99HI0700A /home/example/path/99HI0700A.BAF_LRR.tsv
   99HI0697A /home/example/path/99HI0697A.BAF_LRR.tsv
   ```
 
   > The filenames should follow the above format: **{SampleID}.BAF\_LRR.tsv**.
+  (Files endind with **.gz** are also accepted)
 
   #### The corresponding BAF_LRR files should be tab-delimited and formatted to follow PennCNV's required input format eg:
 

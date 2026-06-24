@@ -1,6 +1,6 @@
 
 // To launch the test on local :
-// nf-test test tests/main.nf.test --profile test,apptainer
+// nf-test test tests/main.nf.test --profile test,docker
 
 
 nextflow_pipeline {
@@ -37,7 +37,7 @@ nextflow_pipeline {
             assert file("$launchDir/results/test_full/calls_unfiltered/penncnv/PennCNV_raw_calls.txt").exists()
             assert file("$launchDir/results/test_full/calls_unfiltered/quantisnp/QuantiSNP_CNV.tsv").exists()
             assert file("$launchDir/results/test_full/calls_unfiltered/quantisnp/QuantiSNP_raw_calls.txt").exists()
-            assert file("$launchDir/results/test_full/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size() + 1
+            assert file("$launchDir/results/test_full/sampleDB.tsv").readLines().size() == file(params.sample_file).readLines().size()
         }
     }
 

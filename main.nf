@@ -17,6 +17,7 @@ process buildSummary {
     val git_hash
     val cohort_tag
     val genome_version
+    val pipeline_mode
     path last_outfile
 
     output:
@@ -46,6 +47,7 @@ process buildSummary {
     configs: ${workflow.configFiles}
     workDir: ${workflow.workDir}
     input_file: ${input_file}
+    pipeline_mode: ${pipeline_mode}
     genome_version: ${genome_version}
     launch_user: ${workflow.userName}
     start_time: ${workflow.start}
@@ -206,7 +208,7 @@ workflow {
 
         sample_file_ch  = channel.fromPath(params.sample_file)
 
-        batch_ch = sample_file_ch.splitCsv(sep: "\t",  header: ['sampleID', 'path_to_BAF_LRR'])                       
+        batch_ch = sample_file_ch.splitCsv(sep: "\t", header: true)                       
                                  .map {row -> row['path_to_BAF_LRR']}                              // grab filepaths only
                                  .buffer( size : params.batch_size, remainder : true)              // split channel into batches of nextflow lists
                                  .take(params.batch_num)                                           // for tuning batch sizes: default -1 means take all batches
@@ -246,7 +248,7 @@ workflow {
         // Collect outputs
         penncnv_cnv_raw     = CALL_CNV.out.penncnv_cnv_raw_ch
                                                     .flatten()
-                                                    .collectFile(keepHeader : true,
+                                                    .collectFile(keepHeader : false,
                                                                  name       :"PennCNV_raw_calls.txt")
 
         quantisnp_cnv_raw   = CALL_CNV.out.quantisnp_cnv_raw_ch
@@ -338,6 +340,7 @@ workflow {
                     params.git_hash,
                     params.dataset_name,
                     params.genome_version,
+                    params.pipeline_mode,
                     params.report ? MAKE_REPORT.out.merged_cnv_qc : merged_cnv 
                   )
 
