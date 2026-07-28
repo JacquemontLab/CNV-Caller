@@ -38,6 +38,11 @@ RUN micromamba install -y -n base -c conda-forge \
 ENV MAMBA_ROOT_PREFIX=/opt/conda
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 
+# Copy your Python script into /usr/bin
+COPY bin/* /usr/bin/
+
+# Make sure the script is executable
+RUN chmod +x /usr/bin/*
 
 # Default shell
 CMD ["bash"]
